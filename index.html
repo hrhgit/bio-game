@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生态进化论 - 领地扩张版</title>
-    <!-- 引入 Google Fonts: ZCOOL KuaiLe -->
+    <title>生态进化论 - 完美数值版</title>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
-    <!-- 引入 Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script>
@@ -75,6 +72,11 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
         @media (max-width: 1024px) {
             .mobile-hide { display: none; }
         }
@@ -122,36 +124,31 @@
             background-color: rgba(251, 191, 36, 0.1);
             opacity: 0.8;
         }
-
-        /* 分类标题粘性定位 */
-        .category-sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 20;
+        
+        /* 百科模态框样式 */
+        #encyclopedia-modal {
+            background-color: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(8px);
-            background-color: rgba(15, 23, 42, 0.95); /* primary-dark alpha */
-            border-bottom: 1px solid #334155;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            letter-spacing: 0.05em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-radius: 4px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        /* 第一个标题不需要 top margin */
-        .category-sticky-header:first-child {
-            margin-top: 0;
+        
+        .food-chain-arrow {
+            stroke: #64748b;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+            animation: dash 20s linear infinite;
+            stroke-dasharray: 5, 5;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -100;
+            }
         }
     </style>
 </head>
 <body class="bg-primary-dark text-gray-200 font-sans h-screen overflow-hidden flex flex-col selection:bg-accent-energy selection:text-primary-dark">
 
-    <!-- 顶栏 -->
     <header class="h-16 bg-secondary-dark border-b border-ui-border flex items-center justify-between px-6 shadow-xl z-20">
         <div class="flex items-center gap-3">
             <div class="relative">
@@ -161,11 +158,10 @@
                 <h1 class="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 tracking-wider leading-none">
                     生态进化论
                 </h1>
-                <p class="text-xs text-gray-500 mt-0.5">Expansion Version</p>
+                <p class="text-xs text-gray-500 mt-0.5">Perfect Balance</p>
             </div>
         </div>
 
-        <!-- 顶部资源栏 -->
         <div class="flex-1 mx-8 hidden md:flex justify-center items-center">
             <div class="flex items-center gap-6 bg-primary-dark/80 px-6 py-2 rounded-full border border-ui-border shadow-inner">
                 <div class="flex items-center gap-2">
@@ -181,6 +177,10 @@
         </div>
 
         <div class="flex items-center space-x-4 text-sm">
+            <button id="wiki-btn" class="p-2 bg-ui-border text-gray-300 rounded-full hover:bg-slate-600 transition relative group" onclick="toggleEncyclopedia()">
+                <i data-lucide="book" class="w-5 h-5"></i>
+                <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap">生物百科</span>
+            </button>
             <button id="sound-btn" class="p-2 bg-ui-border text-gray-300 rounded-full hover:bg-slate-600 transition" onclick="SoundSystem.toggle()">
                 <i data-lucide="volume-2" class="w-5 h-5"></i>
             </button>
@@ -191,7 +191,6 @@
         </div>
     </header>
 
-    <!-- 主体区域 -->
     <main class="flex-1 flex overflow-hidden relative">
         
         <div class="absolute inset-0 pointer-events-none opacity-5">
@@ -203,48 +202,36 @@
             </svg>
         </div>
 
-        <!-- 左侧面板：全局升级系统 -->
         <div class="w-full lg:w-1/4 max-w-xs bg-secondary-dark/90 backdrop-blur-md p-4 flex flex-col border-r border-ui-border z-10 mobile-hide shadow-2xl">
             <h2 class="text-lg text-accent-gold border-b border-ui-border pb-2 flex items-center gap-2 mb-3">
                 <i data-lucide="arrow-up-circle" class="w-5 h-5"></i> 领地扩张
             </h2>
-            
-            <!-- 升级列表容器 -->
             <div id="upgrades-container" class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3">
-                <!-- 动态生成 -->
-            </div>
-
+                </div>
             <div class="mt-3 pt-3 border-t border-ui-border">
                 <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
                     <span><i data-lucide="sprout" class="w-3 h-3 inline mr-1"></i>物种统计</span>
                 </div>
                 <div id="stats-container" class="grid grid-cols-2 gap-2 text-xs">
-                    <!-- 动态统计 -->
-                </div>
+                    </div>
             </div>
         </div>
 
-        <!-- 中央内容区域：网格 -->
         <div class="flex-1 flex flex-col items-center justify-center relative z-0 p-4">
             <div id="grid-container" class="transition-all duration-500">
-                <!-- 网格由 JS 生成 -->
-            </div>
-
-            <!-- 底部状态栏 -->
+                </div>
             <div id="status-bar" class="absolute bottom-8 bg-secondary-dark/90 backdrop-blur px-8 py-3 rounded-full border border-ui-border text-gray-300 shadow-2xl z-20 flex items-center gap-3 transition-all transform translate-y-20 opacity-0">
                 <i data-lucide="map-pin" class="w-4 h-4 text-accent-energy"></i>
                 <span id="status-text">请选择一个区域进行观察</span>
             </div>
         </div>
 
-        <!-- 右侧面板：进化/建造 -->
         <div class="w-full lg:w-1/4 max-w-md bg-secondary-dark/90 backdrop-blur-md flex flex-col border-l border-ui-border z-10 shadow-2xl">
             <div class="p-4 border-b border-ui-border">
                 <h2 class="text-xl text-gray-200 flex items-center gap-2">
                     <i data-lucide="dna-off" class="w-5 h-5"></i> 物种图鉴
                 </h2>
             </div>
-            
             <div id="detail-panel-content" class="flex-1 overflow-y-auto pr-2 custom-scrollbar p-4">
                 <div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-60">
                     <i data-lucide="microscope" class="w-16 h-16 mb-4 stroke-1"></i>
@@ -253,6 +240,123 @@
             </div>
         </div>
     </main>
+
+    <div id="encyclopedia-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-secondary-dark border-2 border-ui-border rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col relative overflow-hidden transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="p-6 border-b border-ui-border flex justify-between items-center bg-primary-dark/80 z-20 shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-accent-energy/10 rounded-lg">
+                        <i data-lucide="book-open" class="w-6 h-6 text-accent-energy"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white tracking-wide">生态百科全书</h2>
+                        <p class="text-sm text-gray-400">食物链关系网络图谱</p>
+                    </div>
+                </div>
+                <button onclick="toggleEncyclopedia()" class="p-2 hover:bg-white/10 rounded-full transition group">
+                    <i data-lucide="x" class="w-6 h-6 text-gray-400 group-hover:text-white"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto bg-[#0b1221] relative custom-scrollbar" id="wiki-scroll-container">
+                <div class="relative min-h-full w-full py-16 flex flex-col items-center" id="wiki-content-wrapper">
+                    
+                    <svg id="connection-lines" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-visible">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
+                            </marker>
+                            <filter id="glow-line">
+                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                    </svg>
+
+                    <div class="flex flex-col gap-24 w-full max-w-4xl relative z-10 px-8">
+                        <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="5"></div>
+                        <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="4"></div>
+                        <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="3"></div>
+                        <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="2"></div>
+                        <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="1"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-3 border-t border-ui-border bg-primary-dark/80 text-xs text-gray-500 flex flex-wrap justify-center gap-4 z-20">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> 生产者</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> 消费者</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> 顶级掠食者</span>
+                <div class="w-px h-4 bg-gray-700 mx-2"></div>
+                <span class="flex items-center gap-1 text-gray-400"><i data-lucide="link" class="w-3 h-3"></i> 捕食: OR(虚线) / AND(实线)</span>
+                <span class="flex items-center gap-1 text-cyan-400"><i data-lucide="heart-handshake" class="w-3 h-3"></i> 共生</span>
+                <span class="flex items-center gap-1 text-purple-400"><i data-lucide="users" class="w-3 h-3"></i> 竞争</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="tutorial-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-500">
+        <div class="bg-secondary-dark border-2 border-accent-energy/50 rounded-2xl shadow-2xl w-full max-w-3xl p-8 relative overflow-hidden">
+            
+            <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-accent-energy/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-accent-life/20 rounded-full blur-3xl"></div>
+
+            <div class="text-center mb-8 relative z-10">
+                <div class="flex justify-center mb-4">
+                    <div class="p-4 bg-primary-dark rounded-full border border-accent-energy shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+                        <i data-lucide="dna" class="w-10 h-10 text-accent-energy"></i>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold text-white tracking-wider">欢迎来到 <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">生态进化论</span></h2>
+                <p class="text-gray-400 mt-2 text-sm">构建完美的深海生态闭环</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 relative z-10">
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
+                    <div class="mt-1 p-2 bg-blue-500/20 rounded text-blue-400"><i data-lucide="mouse-pointer-2" class="w-5 h-5"></i></div>
+                    <div>
+                        <h3 class="text-blue-400 font-bold mb-1">点击放置</h3>
+                        <p class="text-xs text-gray-400">消耗能量在网格中放置物种。从最基础的<span class="text-green-400">生产者</span>（如蓝藻）开始。</p>
+                    </div>
+                </div>
+
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
+                    <div class="mt-1 p-2 bg-orange-500/20 rounded text-orange-400"><i data-lucide="link" class="w-5 h-5"></i></div>
+                    <div>
+                        <h3 class="text-orange-400 font-bold mb-1">邻接生存</h3>
+                        <p class="text-xs text-gray-400">捕食者必须放在猎物的<span class="text-white font-bold">上下左右</span>相邻格子才能生存，否则会饥饿死亡。</p>
+                    </div>
+                </div>
+
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
+                    <div class="mt-1 p-2 bg-cyan-500/20 rounded text-cyan-400"><i data-lucide="heart-handshake" class="w-5 h-5"></i></div>
+                    <div>
+                        <h3 class="text-cyan-400 font-bold mb-1">共生关系</h3>
+                        <p class="text-xs text-gray-400">特定的物种组合（如虾和蟹）相邻时会产生<span class="text-cyan-400">共生Buff</span>，大幅提高产量。</p>
+                    </div>
+                </div>
+
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
+                    <div class="mt-1 p-2 bg-purple-500/20 rounded text-purple-400"><i data-lucide="users" class="w-5 h-5"></i></div>
+                    <div>
+                        <h3 class="text-purple-400 font-bold mb-1">避免竞争</h3>
+                        <p class="text-xs text-gray-400">同种生物过于密集会产生<span class="text-purple-400">资源竞争Debuff</span>，请合理规划布局。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-center relative z-10">
+                <button onclick="startGame()" class="group relative px-8 py-3 bg-accent-energy text-primary-dark font-bold rounded-full hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(56,189,248,0.5)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] overflow-hidden">
+                    <span class="relative z-10 flex items-center gap-2">
+                        开始演化 <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // --- 音效系统 ---
@@ -304,8 +408,6 @@
             playError: function() { this.init(); this.playTone(150, 'square', 0.1); this.playTone(100, 'square', 0.1, 0.1); }
         };
 
-        // --- 游戏配置：物种分类与定义 ---
-        
         const CATEGORIES = {
             'plant': { name: '海草藻类', color: 'text-green-400', icon: 'sprout', badgeColor: 'bg-green-900/50 border-green-800 text-green-300' },
             'mollusk': { name: '浮游软体', color: 'text-cyan-300', icon: 'ghost', badgeColor: 'bg-cyan-900/50 border-cyan-800 text-cyan-300' },
@@ -315,34 +417,99 @@
             'apex': { name: '远古巨兽', color: 'text-red-500', icon: 'skull', badgeColor: 'bg-red-900/50 border-red-800 text-red-300' }
         };
 
+        // Updated based on final matrix
         const CREATURES = [
-            // 海草藻类
-            { category: 'plant', id: 'algae', name: '光合蓝藻', tier: 1, maxLevel: 4, foodConfig: null, cost: 40, baseOutput: 5, interval: 2500, consumptionImpact: 0, starvationRate: 0, color: 'text-green-300', baseColor: 'bg-green-950', fillColor: 'bg-green-600', borderColor: 'border-green-800', icon: 'leaf', desc: '基础生产者，吸收光能。' },
-            { category: 'plant', id: 'kelp', name: '紫晶海带', tier: 1, maxLevel: 4, foodConfig: null, cost: 60, baseOutput: 10, interval: 4000, consumptionImpact: 0, starvationRate: 0, color: 'text-fuchsia-300', baseColor: 'bg-fuchsia-950', fillColor: 'bg-fuchsia-600', borderColor: 'border-fuchsia-800', icon: 'sprout', desc: '富含稀有矿物质的植物。' },
-            
-            // 浮游软体
-            { category: 'mollusk', id: 'plankton', name: '荧光浮游虫', tier: 2, maxLevel: 6, foodConfig: { mode: 'OR', targets: ['algae'] }, cost: 160, baseOutput: 32, interval: 4000, consumptionImpact: 0.4, starvationRate: -10, color: 'text-cyan-300', baseColor: 'bg-cyan-950', fillColor: 'bg-cyan-600', borderColor: 'border-cyan-800', icon: 'bug', desc: '以蓝藻为食。' },
-            { category: 'mollusk', id: 'jellyfish', name: '幽灵水母', tier: 3, maxLevel: 8, foodConfig: { mode: 'OR', targets: ['plankton', 'shrimp'] }, cost: 800, baseOutput: 240, interval: 6000, consumptionImpact: 0.8, starvationRate: -15, color: 'text-indigo-300', baseColor: 'bg-indigo-950', fillColor: 'bg-indigo-600', borderColor: 'border-indigo-800', icon: 'ghost', desc: '漂浮的捕食者。' },
-
-            // 甲壳节肢
-            { category: 'arthropod', id: 'crab', name: '晶石蟹', tier: 2, maxLevel: 5, foodConfig: { mode: 'OR', targets: ['kelp'] }, cost: 200, baseOutput: 50, interval: 5000, consumptionImpact: 0.4, starvationRate: -10, color: 'text-pink-300', baseColor: 'bg-pink-950', fillColor: 'bg-pink-600', borderColor: 'border-pink-800', icon: 'gem', desc: '坚硬的甲壳，喜爱海带。' },
-            { category: 'arthropod', id: 'shrimp', name: '电光虾', tier: 2, maxLevel: 8, foodConfig: { mode: 'OR', targets: ['algae', 'kelp'] }, cost: 200, baseOutput: 24, interval: 3000, consumptionImpact: 0.4, starvationRate: -12, color: 'text-yellow-300', baseColor: 'bg-yellow-950', fillColor: 'bg-yellow-600', borderColor: 'border-yellow-800', icon: 'zap', desc: '适应力强，可食用多种植物。' },
-
-            // 深海鱼类
-            { category: 'fish', id: 'eel', name: '雷霆鳗', tier: 3, maxLevel: 8, foodConfig: { mode: 'AND', targets: ['shrimp', 'plankton'] }, cost: 800, baseOutput: 240, interval: 6000, consumptionImpact: 0.8, starvationRate: -18, color: 'text-violet-300', baseColor: 'bg-violet-950', fillColor: 'bg-violet-600', borderColor: 'border-violet-800', icon: 'activity', desc: '挑食的猎手，需丰富食物来源。' },
-            { category: 'fish', id: 'hunter', name: '深海猎手', tier: 4, maxLevel: 10, foodConfig: { mode: 'OR', targets: ['jellyfish', 'turtle'] }, cost: 4800, baseOutput: 1920, interval: 8000, consumptionImpact: 0.8, starvationRate: -20, color: 'text-orange-300', baseColor: 'bg-orange-950', fillColor: 'bg-orange-600', borderColor: 'border-orange-800', icon: 'crosshair', desc: '凶猛的顶级掠食者。' },
-            
-            // 两栖爬行
-            { category: 'reptile', id: 'turtle', name: '装甲海龟', tier: 3, maxLevel: 20, foodConfig: { mode: 'AND', targets: ['crab'] }, cost: 800, baseOutput: 240, interval: 10000, consumptionImpact: 0.6, starvationRate: -10, color: 'text-emerald-300', baseColor: 'bg-emerald-950', fillColor: 'bg-emerald-600', borderColor: 'border-emerald-800', icon: 'shield', desc: '嗜食硬壳蟹类。' },
-
-            // 远古巨兽
-            { category: 'apex', id: 'leviathan', name: '深渊巨兽', tier: 5, maxLevel: 12, foodConfig: { mode: 'AND', targets: ['hunter', 'eel'] }, cost: 33600, baseOutput: 16800, interval: 10000, consumptionImpact: 0.9, starvationRate: -30, color: 'text-red-500', baseColor: 'bg-red-950', fillColor: 'bg-red-700', borderColor: 'border-red-800', icon: 'skull', desc: '深海的霸主，吞噬一切。' }
+            { 
+                category: 'plant', id: 'algae', name: '光合蓝藻', tier: 1, maxLevel: 4, 
+                cost: 40, baseOutput: 5, interval: 2500,
+                foodConfig: null, 
+                consumptionImpact: 0, starvationRate: 0, 
+                color: 'text-green-300', baseColor: 'bg-green-950', fillColor: 'bg-green-600', borderColor: 'border-green-800', icon: 'leaf', desc: '基础生产者，吸收光能。',
+                relations: [{ target: 'kelp', type: 'symbiosis', val: 0.1, msg: '藻带共生' }] 
+            },
+            { 
+                category: 'plant', id: 'kelp', name: '紫晶海带', tier: 1, maxLevel: 4, 
+                cost: 60, baseOutput: 10, interval: 4000,
+                foodConfig: null, 
+                consumptionImpact: 0, starvationRate: 0, 
+                color: 'text-fuchsia-300', baseColor: 'bg-fuchsia-950', fillColor: 'bg-fuchsia-600', borderColor: 'border-fuchsia-800', icon: 'sprout', desc: '富含稀有矿物质的植物。',
+                relations: [{ target: 'algae', type: 'symbiosis', val: 0.1, msg: '藻带共生' }]
+            },
+            { 
+                category: 'mollusk', id: 'plankton', name: '荧光浮游虫', tier: 2, maxLevel: 6, 
+                cost: 160, baseOutput: 32, interval: 4000,
+                foodConfig: { mode: 'OR', targets: ['algae'] }, 
+                consumptionImpact: 0.4, starvationRate: -10, 
+                color: 'text-cyan-300', baseColor: 'bg-cyan-950', fillColor: 'bg-cyan-600', borderColor: 'border-cyan-800', icon: 'bug', desc: '以蓝藻为食。',
+                relations: [{ target: 'plankton', type: 'competition', val: -0.1, msg: '种群过密' }]
+            },
+            { 
+                category: 'arthropod', id: 'crab', name: '晶石蟹', tier: 2, maxLevel: 5, 
+                cost: 200, baseOutput: 50, interval: 5000,
+                foodConfig: { mode: 'OR', targets: ['kelp'] }, 
+                consumptionImpact: 0.4, starvationRate: -10, 
+                color: 'text-pink-300', baseColor: 'bg-pink-950', fillColor: 'bg-pink-600', borderColor: 'border-pink-800', icon: 'gem', desc: '坚硬的甲壳，喜爱海带。',
+                relations: [{ target: 'shrimp', type: 'symbiosis', val: 0.25, msg: '虾蟹互利' }]
+            },
+            { 
+                category: 'arthropod', id: 'shrimp', name: '电光虾', tier: 2, maxLevel: 8, 
+                cost: 200, baseOutput: 24, interval: 3000,
+                foodConfig: { mode: 'OR', targets: ['algae', 'kelp'] }, 
+                consumptionImpact: 0.4, starvationRate: -12, 
+                color: 'text-yellow-300', baseColor: 'bg-yellow-950', fillColor: 'bg-yellow-600', borderColor: 'border-yellow-800', icon: 'zap', desc: '适应力强，可食用多种植物。',
+                relations: [{ target: 'crab', type: 'symbiosis', val: 0.25, msg: '虾蟹互利' }]
+            },
+            { 
+                category: 'mollusk', id: 'jellyfish', name: '幽灵水母', tier: 3, maxLevel: 8, 
+                cost: 800, baseOutput: 240, interval: 6000,
+                foodConfig: { mode: 'OR', targets: ['plankton', 'shrimp'] }, 
+                consumptionImpact: 0.6, starvationRate: -15, 
+                color: 'text-indigo-300', baseColor: 'bg-indigo-950', fillColor: 'bg-indigo-600', borderColor: 'border-indigo-800', icon: 'ghost', desc: '漂浮的捕食者。',
+                relations: [
+                    { target: 'jellyfish', type: 'symbiosis', val: 0.1, msg: '水母群聚' },
+                    { target: 'eel', type: 'competition', val: -0.2, msg: '领地冲突' }
+                ]
+            },
+            { 
+                category: 'reptile', id: 'turtle', name: '装甲海龟', tier: 3, maxLevel: 20, 
+                cost: 1200, baseOutput: 300, interval: 8000,
+                foodConfig: { mode: 'OR', targets: ['crab', 'plankton'] }, 
+                consumptionImpact: 0.6, starvationRate: -10, 
+                color: 'text-emerald-300', baseColor: 'bg-emerald-950', fillColor: 'bg-emerald-600', borderColor: 'border-emerald-800', icon: 'shield', desc: '厚重的甲壳，食谱广泛。',
+                relations: []
+            },
+            { 
+                category: 'fish', id: 'eel', name: '雷霆鳗', tier: 3, maxLevel: 12, 
+                cost: 800, baseOutput: 140, interval: 4000,
+                foodConfig: { mode: 'AND', targets: ['shrimp', 'plankton'] }, 
+                consumptionImpact: 0.6, starvationRate: -18, 
+                color: 'text-violet-300', baseColor: 'bg-violet-950', fillColor: 'bg-violet-600', borderColor: 'border-violet-800', icon: 'activity', desc: '敏捷的猎手，需多种食物。',
+                relations: [
+                    { target: 'kelp', type: 'symbiosis', val: 0.3, msg: '伏击环境' },
+                    { target: 'jellyfish', type: 'competition', val: -0.2, msg: '领地冲突' }
+                ]
+            },
+            { 
+                category: 'fish', id: 'hunter', name: '深海猎手', tier: 4, maxLevel: 10, 
+                cost: 2400, baseOutput: 600, interval: 6000,
+                foodConfig: { mode: 'AND', targets: ['jellyfish', 'turtle'] }, 
+                consumptionImpact: 0.8, starvationRate: -20, 
+                color: 'text-orange-300', baseColor: 'bg-orange-950', fillColor: 'bg-orange-600', borderColor: 'border-orange-800', icon: 'crosshair', desc: '凶猛的顶级掠食者，成群狩猎。',
+                relations: [{ target: 'algae', type: 'symbiosis', val: 0.3, msg: '富氧水域' }]
+            },
+            { 
+                category: 'apex', id: 'leviathan', name: '深渊巨兽', tier: 5, maxLevel: 10, 
+                cost: 4800, baseOutput: 1920, interval: 8000,
+                foodConfig: { mode: 'AND', targets: ['hunter', 'eel'] }, 
+                consumptionImpact: 0.9, starvationRate: -30, 
+                color: 'text-red-500', baseColor: 'bg-red-950', fillColor: 'bg-red-700', borderColor: 'border-red-800', icon: 'skull', desc: '深海的霸主，吞噬高阶猎手。',
+                relations: [{ target: 'leviathan', type: 'competition', val: -0.5, msg: '王不见王' }]
+            }
         ];
 
-        // 只保留扩展升级
         const UPGRADES = [
             { id: 'grid_expansion_1', name: '空间折叠 I', type: 'grid', value: 4, cost: 500, reqCreature: 'algae', reqCount: 3, desc: '将培养皿扩大至 4x4', icon: 'maximize' },
-            { id: 'grid_expansion_2', name: '空间折叠 II', type: 'grid', value: 5, cost: 2000, reqCreature: 'jellyfish', reqCount: 2, desc: '将培养皿扩大至 5x5', icon: 'maximize' },
+            { id: 'grid_expansion_2', name: '空间折叠 II', type: 'grid', value: 5, cost: 2000, reqCreature: 'plankton', reqCount: 2, desc: '将培养皿扩大至 5x5', icon: 'maximize' },
             { id: 'grid_expansion_3', name: '位面扩张', type: 'grid', value: 6, cost: 10000, reqCreature: 'leviathan', reqCount: 1, desc: '将培养皿扩大至 6x6', icon: 'globe' }
         ];
 
@@ -351,14 +518,13 @@
         let gameState = {
             energy: CONFIG.initialEnergy,
             gridSize: 3,
-            globalTime: 0,
             isPaused: false,
             cells: [],
             selectedCellIndex: -1,
-            purchasedUpgrades: new Set()
+            purchasedUpgrades: new Set(),
+            activeBuffs: {}
         };
 
-        // --- DOM ---
         const gridEl = document.getElementById('grid-container');
         const energyEl = document.getElementById('header-energy');
         const rateEl = document.getElementById('header-rate');
@@ -368,59 +534,267 @@
         const statusBar = document.getElementById('status-bar');
         const statusText = document.getElementById('status-text');
         const pauseBtn = document.getElementById('pause-btn');
+        const modal = document.getElementById('encyclopedia-modal');
+        let wikiTimeout;
+        let gameInterval;
 
         function init() {
             gameState.cells = Array(gameState.gridSize * gameState.gridSize).fill(null);
             renderGrid();
             renderUpgrades();
-            setInterval(gameLoop, CONFIG.tickRate);
+            
+            // 这里不再直接启动 setInterval
             setTimeout(() => statusBar.classList.remove('translate-y-20', 'opacity-0'), 500);
             lucide.createIcons();
-            document.addEventListener('click', () => { if(SoundSystem.ctx && SoundSystem.ctx.state === 'suspended') SoundSystem.ctx.resume(); }, {once:true});
+            
+            document.addEventListener('click', () => { 
+                if(SoundSystem.ctx && SoundSystem.ctx.state === 'suspended') SoundSystem.ctx.resume(); 
+            }, {once:true});
             
             energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
+            buildEncyclopedia();
+        }
+
+        function startGame() {
+            const tutorialModal = document.getElementById('tutorial-modal');
+            
+            SoundSystem.init();
+            SoundSystem.playUpgrade(); 
+
+            tutorialModal.classList.add('opacity-0', 'pointer-events-none');
+            
+            if (!gameInterval) {
+                gameInterval = setInterval(gameLoop, CONFIG.tickRate);
+            }
+
+            setTimeout(() => {
+                tutorialModal.style.display = 'none';
+            }, 500);
+        }
+
+        function toggleEncyclopedia() {
+            const modalContent = document.getElementById('modal-content');
+            
+            if (wikiTimeout) clearTimeout(wikiTimeout);
+
+            if (modal.classList.contains('hidden')) {
+                if (!gameState.isPaused) document.getElementById('pause-btn').click();
+
+                modal.classList.remove('hidden');
+                void modal.offsetWidth;
+                
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                
+                buildEncyclopedia();
+                
+                wikiTimeout = setTimeout(() => {
+                    drawConnections();
+                }, 300);
+            } else {
+                modal.classList.add('opacity-0');
+                modalContent.classList.add('scale-95');
+                
+                wikiTimeout = setTimeout(() => {
+                    modal.classList.add('hidden');
+                    if (gameState.isPaused) document.getElementById('pause-btn').click();
+                }, 300);
+            }
+        }
+
+        function buildEncyclopedia() {
+            for (let t = 1; t <= 5; t++) {
+                const row = document.querySelector(`.tier-row[data-tier="${t}"]`);
+                if (!row) continue;
+                row.innerHTML = '';
+                const tierCreatures = CREATURES.filter(c => c.tier === t);
+                tierCreatures.forEach(c => {
+                    const node = document.createElement('div');
+                    node.id = `wiki-node-${c.id}`;
+                    node.className = `flex flex-col items-center p-3 bg-secondary-dark border border-gray-700 rounded-xl shadow-lg w-32 relative z-10`;
+                    node.innerHTML = `
+                        <div class="w-12 h-12 rounded-lg ${c.baseColor} border ${c.borderColor} flex items-center justify-center mb-2">
+                            <i data-lucide="${c.icon}" class="w-6 h-6 ${c.color}"></i>
+                        </div>
+                        <span class="text-xs font-bold text-gray-200 text-center">${c.name}</span>
+                    `;
+                    row.appendChild(node);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function drawConnections() {
+            const container = document.getElementById('wiki-content-wrapper');
+            const svg = document.getElementById('connection-lines');
+            
+            const oldLines = svg.querySelectorAll('path.connection-line');
+            oldLines.forEach(l => l.remove());
+            
+            const containerRect = container.getBoundingClientRect();
+            
+            svg.setAttribute('height', container.offsetHeight);
+            svg.setAttribute('width', container.offsetWidth);
+
+            function getIconBoxCoords(nodeId) {
+                const node = document.getElementById(nodeId);
+                if (!node) return null;
+                const iconBox = node.querySelector('div'); 
+                const rect = iconBox.getBoundingClientRect();
+                return {
+                    top: rect.top - containerRect.top,
+                    bottom: rect.bottom - containerRect.top,
+                    centerX: (rect.left + rect.width / 2) - containerRect.left,
+                    centerY: (rect.top + rect.height / 2) - containerRect.top
+                };
+            }
+
+            function createPath(d, color, dashArray, width, type) {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', d);
+                path.setAttribute('class', 'connection-line cursor-pointer transition-all duration-300');
+                path.setAttribute('stroke', color);
+                path.setAttribute('stroke-width', width);
+                path.setAttribute('fill', 'none');
+                
+                if (type === 'food') path.setAttribute('marker-end', 'url(#arrowhead)');
+                if (dashArray) path.setAttribute('stroke-dasharray', dashArray);
+
+                path.addEventListener('mouseenter', () => {
+                    path.setAttribute('stroke-width', parseInt(width) + 2);
+                    path.setAttribute('stroke', type === 'food' ? '#94a3b8' : (type === 'symbiosis' ? '#22d3ee' : '#c084fc'));
+                    path.setAttribute('filter', 'url(#glow-line)');
+                    path.setAttribute('stroke-dasharray', '0'); 
+                    svg.appendChild(path); 
+                });
+                path.addEventListener('mouseleave', () => {
+                    path.setAttribute('stroke-width', width);
+                    path.setAttribute('stroke', color);
+                    path.removeAttribute('filter');
+                    if (dashArray) path.setAttribute('stroke-dasharray', dashArray);
+                });
+
+                svg.appendChild(path);
+            }
+
+            CREATURES.forEach(creature => {
+                const predatorCoords = getIconBoxCoords(`wiki-node-${creature.id}`);
+                if (!predatorCoords) return;
+
+                if (creature.foodConfig) {
+                    const isAndMode = creature.foodConfig.mode === 'AND';
+                    const dashStyle = isAndMode ? '0' : '6, 6'; 
+                    const widthStyle = isAndMode ? '2.5' : '1.5'; 
+
+                    creature.foodConfig.targets.forEach(preyId => {
+                        const preyCoords = getIconBoxCoords(`wiki-node-${preyId}`);
+                        if (!preyCoords) return;
+
+                        const startX = preyCoords.centerX;
+                        const startY = preyCoords.top; 
+                        const endX = predatorCoords.centerX;
+                        const endY = predatorCoords.bottom + 5;
+
+                        const dist = Math.abs(startY - endY);
+                        const curveFactor = dist > 200 ? 0.6 : 0.5; 
+
+                        const d = `M ${startX} ${startY} C ${startX} ${startY - dist * curveFactor}, ${endX} ${endY + dist * curveFactor}, ${endX} ${endY}`;
+
+                        createPath(d, '#475569', dashStyle, widthStyle, 'food');
+                    });
+                }
+
+                if (creature.relations) {
+                    creature.relations.forEach(rel => {
+                        const targetCoords = getIconBoxCoords(`wiki-node-${rel.target}`);
+                        if (!targetCoords) return;
+
+                        const isSelf = (creature.id === rel.target);
+                        let d = '';
+
+                        if (isSelf) {
+                            const startX = predatorCoords.centerX;
+                            const startY = predatorCoords.top;
+                            const r = 25;
+                            d = `M ${startX - 5} ${startY} C ${startX - r} ${startY - r*1.5}, ${startX + r} ${startY - r*1.5}, ${startX + 5} ${startY}`;
+                        } else {
+                            const startX = predatorCoords.centerX;
+                            const startY = predatorCoords.top;
+                            const endX = targetCoords.centerX;
+                            const endY = targetCoords.top;
+
+                            if (Math.abs(startY - endY) < 20) {
+                                const midX = (startX + endX) / 2;
+                                const arcHeight = 80; 
+                                d = `M ${startX} ${startY} Q ${midX} ${startY - arcHeight} ${endX} ${endY}`;
+                            } else {
+                                const dist = Math.abs(startY - endY);
+                                d = `M ${startX} ${startY} C ${startX} ${startY - dist * 0.5}, ${endX} ${endY + dist * 0.5}, ${endX} ${endY}`;
+                            }
+                        }
+
+                        if (rel.type === 'symbiosis') {
+                            createPath(d, '#0891b2', null, '2', 'symbiosis'); 
+                        } else if (rel.type === 'competition') {
+                            createPath(d, '#9333ea', '2, 4', '2', 'competition'); 
+                        }
+                    });
+                }
+            });
         }
 
         function gameLoop() {
             if (gameState.isPaused) return;
-            const prevTime = gameState.globalTime;
-            gameState.globalTime += CONFIG.tickRate;
+            
             const impacts = calculateEcologicalImpacts();
-
             let totalRate = 0;
 
             gameState.cells.forEach((cell, idx) => {
                 if (!cell) return;
+                
                 const def = getCreatureDef(cell.creatureId);
                 const impact = impacts[idx];
+                
                 cell.speedMultiplier = impact.speedMultiplier;
-                cell.state = impact.isStarving ? 'dying' : (impact.speedMultiplier > 1 ? 'boosting' : 'normal');
+                cell.buffs = impact.buffs;
+                cell.debuffs = impact.debuffs;
+                cell.symbiosis = impact.symbiosis;
+                cell.competition = impact.competition;
+
+                if (impact.isStarving || cell.speedMultiplier <= 0) {
+                    cell.state = 'dying';
+                } else {
+                    cell.state = 'normal';
+                }
 
                 if (cell.speedMultiplier > 0) {
-                    const leveledOutput = def.baseOutput * (1 + (cell.level - 1) * 0.2);
+                    const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
+                    const baseWithBuff = def.baseOutput + buffValue;
+                    const leveledOutput = baseWithBuff * (1 + (cell.level - 1) * 0.2);
                     totalRate += (leveledOutput * cell.speedMultiplier) / (def.interval / 1000);
                 }
 
-                if (impact.isStarving || impact.speedMultiplier < 0) {
+                if (cell.state === 'dying') {
                     const decayAmount = impact.isStarving ? Math.abs(def.starvationRate) : Math.abs(impact.speedMultiplier * 5);
                     cell.progress -= decayAmount;
+
                     if (cell.progress <= 0) {
-                        if (cell.level > 1) { cell.level--; cell.progress = 100; } else { killCreature(idx); return; }
+                        if (cell.level > 1) { 
+                            cell.level--; 
+                            cell.progress = 100;
+                        } else { 
+                            killCreature(idx); 
+                            return; 
+                        }
                     }
                 } else {
-                    if (Math.abs(impact.speedMultiplier - 1.0) < 0.01) {
-                        const syncProgress = (gameState.globalTime % def.interval) / def.interval * 100;
-                        cell.progress = syncProgress;
-                        const prevCycles = Math.floor(prevTime / def.interval);
-                        const currCycles = Math.floor(gameState.globalTime / def.interval);
-                        if (currCycles > prevCycles) handleProduction(idx, cell, def);
-                    } else {
-                        const baseIncrement = (CONFIG.tickRate / def.interval) * 100;
-                        cell.progress += baseIncrement * impact.speedMultiplier;
-                        if (cell.progress >= 100) {
-                            cell.progress = 0;
-                            handleProduction(idx, cell, def);
-                        }
+                    const baseIncrement = (CONFIG.tickRate / def.interval) * 100;
+                    const actualIncrement = baseIncrement * cell.speedMultiplier;
+                    cell.progress += actualIncrement;
+
+                    if (cell.progress >= 100) {
+                        handleProduction(idx, cell, def);
+                        cell.progress = 0;
                     }
                 }
                 updateCellVisuals(idx, cell);
@@ -429,10 +803,16 @@
             rateEl.innerText = `+${totalRate.toFixed(1)}/s`;
             updateUpgradesState(); 
             updateStats();
+            
+            if (gameState.selectedCellIndex !== -1 && gameState.cells[gameState.selectedCellIndex]) {
+                 renderDetailPanel(gameState.selectedCellIndex, false);
+            }
         }
 
         function handleProduction(idx, cell, def) {
-            const output = Math.floor(def.baseOutput * (1 + (cell.level - 1) * 0.2));
+            const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
+            const baseWithBuff = def.baseOutput + buffValue;
+            const output = Math.floor(baseWithBuff * (1 + (cell.level - 1) * 0.2));
             produceEnergy(idx, output);
             if (cell.level < def.maxLevel) {
                 cell.level++;
@@ -446,42 +826,93 @@
         }
 
         function calculateEcologicalImpacts() {
-            const impacts = gameState.cells.map(() => ({ speedMultiplier: 1.0, isStarving: false }));
+            const impacts = gameState.cells.map(() => ({ 
+                speedMultiplier: 1.0, 
+                isStarving: false, 
+                buffs: 0,
+                debuffs: 0,
+                symbiosis: 0,
+                competition: 0
+            }));
+
+            const predatorCountsOnFood = new Array(gameState.cells.length).fill(0);
+            
+            gameState.cells.forEach((cell, idx) => {
+                if (!cell) return;
+                const def = getCreatureDef(cell.creatureId);
+                if (def.foodConfig) {
+                    const neighbors = getNeighbors(idx);
+                    neighbors.forEach(nIdx => {
+                        const nCell = gameState.cells[nIdx];
+                        if (nCell && def.foodConfig.targets.includes(nCell.creatureId)) {
+                            predatorCountsOnFood[nIdx]++;
+                        }
+                    });
+                }
+            });
+
             gameState.cells.forEach((cell, idx) => {
                 if (!cell) return;
                 const def = getCreatureDef(cell.creatureId);
                 const neighbors = getNeighbors(idx);
-                
-                if (def.foodConfig) {
-                    const targets = def.foodConfig.targets;
-                    const mode = def.foodConfig.mode; 
 
-                    const foodIndices = neighbors.filter(nIdx => {
+                if (def.relations) {
+                    def.relations.forEach(rel => {
+                        const targetIndices = neighbors.filter(nIdx => {
+                            const nCell = gameState.cells[nIdx];
+                            return nCell && nCell.creatureId === rel.target;
+                        });
+                        if (targetIndices.length > 0) {
+                            const effectValue = targetIndices.length * rel.val;
+                            if (rel.val > 0) impacts[idx].symbiosis += effectValue;
+                            else impacts[idx].competition += effectValue;
+                            impacts[idx].speedMultiplier += effectValue;
+                        }
+                    });
+                }
+
+                if (def.foodConfig) {
+                    const validFoodIndices = neighbors.filter(nIdx => {
                         const nCell = gameState.cells[nIdx];
-                        return nCell && targets.includes(nCell.creatureId);
+                        return nCell && def.foodConfig.targets.includes(nCell.creatureId);
                     });
 
                     let isStarving = false;
-                    if (mode === 'AND') {
-                        const presentTypes = new Set(foodIndices.map(i => gameState.cells[i].creatureId));
-                        isStarving = !targets.every(t => presentTypes.has(t));
+                    if (def.foodConfig.mode === 'AND') {
+                        const eatenTypes = new Set(validFoodIndices.map(i => gameState.cells[i].creatureId));
+                        isStarving = !def.foodConfig.targets.every(t => eatenTypes.has(t));
                     } else {
-                        isStarving = foodIndices.length === 0;
+                        isStarving = validFoodIndices.length === 0;
                     }
 
                     if (isStarving) {
                         impacts[idx].isStarving = true;
                         impacts[idx].speedMultiplier = 0;
                     } else {
-                        const foodCount = foodIndices.length;
-                        impacts[idx].speedMultiplier = 1.0 + (foodCount - (mode==='AND'?targets.length:1)) * 0.3;
-                        const pressurePerFood = def.consumptionImpact / foodCount;
-                        foodIndices.forEach(fIdx => {
+                        let myFoodShare = 0;
+                        validFoodIndices.forEach(fIdx => {
+                            const eaters = predatorCountsOnFood[fIdx];
+                            myFoodShare += (1 / eaters);
+                        });
+
+                        if (myFoodShare > 1.0) {
+                            const surplus = myFoodShare - 1.0;
+                            const extraBuff = surplus * 0.3; 
+                            impacts[idx].buffs += extraBuff;
+                            impacts[idx].speedMultiplier += extraBuff;
+                        }
+                    }
+
+                    if (validFoodIndices.length > 0) {
+                        const pressurePerFood = def.consumptionImpact / validFoodIndices.length;
+                        validFoodIndices.forEach(fIdx => {
+                            impacts[fIdx].debuffs += pressurePerFood;
                             impacts[fIdx].speedMultiplier -= pressurePerFood;
                         });
                     }
                 }
             });
+
             return impacts;
         }
 
@@ -500,8 +931,10 @@
                 lucide.createIcons({ root: float });
                 setTimeout(() => float.remove(), 1500);
             }
-            if (gameState.selectedCellIndex !== -1 && !gameState.cells[gameState.selectedCellIndex]) {
-                renderDetailPanel(gameState.selectedCellIndex, false);
+            if (gameState.selectedCellIndex !== -1) {
+                if (!gameState.cells[gameState.selectedCellIndex] || gameState.cells[gameState.selectedCellIndex]) {
+                    renderDetailPanel(gameState.selectedCellIndex, false);
+                }
             }
         }
 
@@ -558,6 +991,7 @@
             gameState.purchasedUpgrades.add(uid);
             SoundSystem.playUpgrade();
             if (u.type === 'grid') expandGrid(u.value);
+            else if (u.type === 'buff') gameState.activeBuffs[u.target] = (gameState.activeBuffs[u.target] || 0) + u.value;
             updateUpgradesState();
             if(gameState.selectedCellIndex !== -1) renderDetailPanel(gameState.selectedCellIndex, false);
         }
@@ -590,7 +1024,12 @@
             lucide.createIcons();
         }
 
-        function removeCreature() { killCreature(gameState.selectedCellIndex); }
+        function removeCreature() { 
+            if (gameState.selectedCellIndex !== -1) {
+                killCreature(gameState.selectedCellIndex);
+            }
+        }
+        
         function killCreature(idx) {
             SoundSystem.playRemove();
             const cell = gameState.cells[idx];
@@ -601,7 +1040,7 @@
                 cellEl.innerHTML = `<div id="cell-visual-${idx}" class="absolute inset-0 rounded-xl border-2 border-ui-border bg-primary-dark hover:border-gray-500 opacity-50 hover:opacity-100 flex items-center justify-center transition-all"><i data-lucide="plus" class="w-6 h-6 text-gray-500"></i></div>`;
                 lucide.createIcons({root: cellEl});
             }
-            if (gameState.selectedCellIndex === idx) renderDetailPanel(idx);
+            if (gameState.selectedCellIndex === idx) renderDetailPanel(idx, false);
         }
 
         function getCreatureDef(id) { return CREATURES.find(c => c.id === id); }
@@ -629,7 +1068,6 @@
 
         function renderGrid() {
             gridEl.innerHTML = '';
-            // 动态更新 Grid 样式
             gridEl.style.gridTemplateColumns = `repeat(${gameState.gridSize}, 1fr)`;
             gridEl.style.gridTemplateRows = `repeat(${gameState.gridSize}, 1fr)`;
 
@@ -681,18 +1119,15 @@
             const targets = def.foodConfig.targets;
             const mode = def.foodConfig.mode;
 
-            // 检查周围是否有符合条件的生物
             const neighborCreatures = neighbors.map(nIdx => gameState.cells[nIdx]?.creatureId).filter(Boolean);
             
             if (mode === 'AND') {
-                // 必须包含所有目标
                 const missing = targets.filter(t => !neighborCreatures.includes(t));
                 if (missing.length > 0) {
                     const missingNames = missing.map(id => getCreatureDef(id).name).join(' 和 ');
                     return { ok: false, reason: `缺少相邻的 ${missingNames}` };
                 }
             } else {
-                // 包含任意目标即可
                 const hasAny = targets.some(t => neighborCreatures.includes(t));
                 if (!hasAny) {
                     const targetNames = targets.map(id => getCreatureDef(id).name).join(' 或 ');
@@ -705,7 +1140,7 @@
         function updateCellVisuals(idx, cellData) {
             const visualEl = document.getElementById(`cell-visual-${idx}`);
             const progressEl = document.getElementById(`cell-progress-${idx}`);
-            const levelEl = document.getElementById(`cell-level-${idx}`); // 注意：之前代码是用 id 获取，这里复用
+            const levelEl = document.getElementById(`cell-level-${idx}`);
             const overlayEl = document.getElementById(`cell-overlay-${idx}`);
             const rateEl = document.getElementById(`cell-rate-${idx}`);
             const iconWrapper = visualEl?.querySelector('.icon-wrapper');
@@ -715,20 +1150,14 @@
             if (progressEl) progressEl.style.height = `${cellData.progress}%`;
             if (levelEl) {
                 const isMax = cellData.level >= getCreatureDef(cellData.creatureId).maxLevel;
-                // 使用 innerText 更新文本，避免重新创建 DOM
                 levelEl.innerText = `LV.${cellData.level}${isMax ? ' MAX' : ''}`;
-                
-                // 动态更新样式
                 levelEl.className = `text-[10px] ${isMax ? 'text-accent-gold font-black' : 'text-white/70 font-bold'} drop-shadow-md`;
-                
-                // 同步更新边框样式（解决升级不立即变色的问题）
                 if (isMax) {
                     visualEl.classList.remove(getCreatureDef(cellData.creatureId).borderColor);
                     visualEl.classList.add('max-level-border');
                 }
             }
 
-            // 状态样式更新...
             visualEl.classList.remove('dying-state');
             overlayEl.className = 'absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0'; 
             iconWrapper.classList.remove('animate-shake');
@@ -770,83 +1199,163 @@
             renderGrid(); renderDetailPanel(idx);
         }
 
+        // 记录上一次选中的索引，用于判断是否需要重绘结构
+        let lastRenderedIndex = -2; 
+
         function renderDetailPanel(index, animate = true) {
-            if (index === -1) { detailPanel.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-60"><i data-lucide="microscope" class="w-16 h-16 mb-4 stroke-1"></i><p class="text-lg">请选择区域</p></div>`; lucide.createIcons(); return; }
+            if (index === -1) {
+                if (lastRenderedIndex !== -1) {
+                    detailPanel.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-60"><i data-lucide="microscope" class="w-16 h-16 mb-4 stroke-1"></i><p class="text-lg">请选择区域</p></div>`;
+                    lucide.createIcons();
+                    lastRenderedIndex = -1;
+                }
+                return;
+            }
+
             const cell = gameState.cells[index];
-            detailPanel.innerHTML = '';
+            const isCellEmpty = !cell; 
             
-            const animClass = animate ? 'animate-fade-in' : '';
+            const needsFullRender = (index !== lastRenderedIndex) || 
+                                    (lastRenderedIndex === index && isCellEmpty !== (document.getElementById('build-list') !== null));
 
-            if (cell) {
-                const def = getCreatureDef(cell.creatureId);
-                const currentOutput = Math.floor(def.baseOutput * (1 + (cell.level - 1) * 0.2));
-                const isMax = cell.level >= def.maxLevel;
-                detailPanel.innerHTML = `
-                    <div class="bg-primary-dark border border-ui-border rounded-xl p-5 ${animClass}">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="w-16 h-16 rounded-xl ${def.fillColor} border ${def.borderColor} flex items-center justify-center shadow-lg relative"><i data-lucide="${def.icon}" class="w-8 h-8 text-white"></i>${isMax ? '<div class="absolute -top-2 -right-2 text-yellow-400 animate-bounce">👑</div>' : ''}</div>
-                            <div>
-                                <h3 class="text-xl ${def.color}">${def.name}</h3>
-                                <div class="text-xs text-gray-500 mt-1 flex items-center gap-2"><span class="${isMax ? 'text-accent-gold font-bold' : 'text-gray-400'}">LV.${cell.level} / ${def.maxLevel}</span></div>
-                            </div>
-                        </div>
-                        <div class="space-y-3 text-sm text-gray-400 bg-secondary-dark/50 p-4 rounded-lg">
-                            <div class="flex justify-between"><span>能量产出</span><span class="text-accent-energy">+${currentOutput}</span></div>
-                            <div class="flex justify-between"><span>速率</span><span class="text-white">${cell.speedMultiplier.toFixed(2)}x</span></div>
-                        </div>
-                        <button onclick="removeCreature()" class="mt-6 w-full py-3 border border-red-900/50 text-red-400 rounded-lg hover:bg-red-900/20 transition flex items-center justify-center gap-2 group"><i data-lucide="trash-2" class="w-4 h-4"></i> 清除物种</button>
-                    </div>`;
-            } else {
-                let html = `<div class="space-y-1 ${animClass} pb-4">`;
+            if (needsFullRender) {
+                lastRenderedIndex = index;
+                const animClass = animate ? 'animate-fade-in' : '';
                 
-                // 价格排序逻辑
-                const sortedCreatures = [...CREATURES].sort((a, b) => a.cost - b.cost);
-                
-                sortedCreatures.forEach(c => {
-                    const canAfford = gameState.energy >= c.cost;
-                    let isLocked = !canAfford;
+                if (cell) {
+                    // --- 渲染生物详情视图 (静态结构) ---
+                    const def = getCreatureDef(cell.creatureId);
+                    const isMax = cell.level >= def.maxLevel;
                     
-                    let reqHtml = '<span class="text-green-400">自养生物</span>';
-                    if (c.foodConfig) {
-                        const names = c.foodConfig.targets.map(tid => getCreatureDef(tid).name);
-                        const joinStr = c.foodConfig.mode === 'AND' ? ' + ' : ' / ';
-                        reqHtml = `<span class="flex items-center gap-1 text-orange-300"><i data-lucide="link" class="w-3 h-3"></i> 需: ${names.join(joinStr)}</span>`;
-                    }
-
-                    const category = CATEGORIES[c.category];
-                    const badge = category ? `<span class="text-[9px] px-1 rounded border ${category.badgeColor} ml-2 flex items-center gap-1"><i data-lucide="${category.icon}" class="w-3 h-3"></i>${category.name}</span>` : '';
-
-                    html += `
-                        <button onclick="placeCreature('${c.id}')" class="w-full text-left relative overflow-hidden group rounded-xl border-2 transition-all duration-200 mb-2 ${isLocked ? 'border-ui-border bg-primary-dark/50 opacity-60 cursor-not-allowed' : `border-gray-700 bg-secondary-dark hover:border-accent-energy`}">
-                            <div class="p-3 flex items-center gap-3 relative z-10">
-                                <div class="w-12 h-12 rounded-lg ${c.fillColor} flex items-center justify-center border shrink-0"><i data-lucide="${c.icon}" class="w-6 h-6 text-white"></i></div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <div class="flex items-center overflow-hidden">
-                                            <span class="font-bold ${isLocked ? 'text-gray-500' : 'text-gray-200'} truncate text-sm">${c.name}</span>
-                                            ${badge}
-                                        </div>
-                                        <span class="text-xs font-mono ${canAfford ? 'text-accent-energy' : 'text-red-400'} shrink-0 ml-2"><i data-lucide="zap" class="w-3 h-3 inline"></i> ${c.cost}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
-                                        <span class="flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3"></i> +${c.baseOutput}/${(c.interval/1000)}s</span>
-                                        ${reqHtml}
+                    detailPanel.innerHTML = `
+                        <div class="bg-primary-dark border border-ui-border rounded-xl p-5 ${animClass}">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-16 h-16 rounded-xl ${def.fillColor} border ${def.borderColor} flex items-center justify-center shadow-lg relative">
+                                    <i data-lucide="${def.icon}" class="w-8 h-8 text-white"></i>
+                                    ${isMax ? '<div class="absolute -top-2 -right-2 text-yellow-400 animate-bounce">👑</div>' : ''}
+                                </div>
+                                <div>
+                                    <h3 class="text-xl ${def.color}">${def.name}</h3>
+                                    <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                                        <span id="panel-level-text" class="${isMax ? 'text-accent-gold font-bold' : 'text-gray-400'}">LV.${cell.level} / ${def.maxLevel}</span>
                                     </div>
                                 </div>
                             </div>
-                        </button>`;
-                });
-                html += `</div>`;
-                detailPanel.innerHTML = html;
-            }
-            lucide.createIcons();
-        }
+                            <div class="space-y-3 text-sm text-gray-400 bg-secondary-dark/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <span>当前产出 (单次/周期)</span>
+                                    <div class="text-right">
+                                        <span id="panel-efficiency" class="text-accent-energy font-bold text-lg">--</span>
+                                        <div id="panel-status-text"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="removeCreature()" class="mt-6 w-full py-3 border border-red-900/50 text-red-400 rounded-lg hover:bg-red-900/20 transition flex items-center justify-center gap-2 group">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> 清除物种
+                            </button>
+                        </div>`;
+                } else {
+                    // --- 渲染建造列表视图 (静态结构) ---
+                    let html = `<div id="build-list" class="space-y-1 ${animClass} pb-4">`;
+                    const sortedCreatures = [...CREATURES].sort((a, b) => a.cost - b.cost);
+                    
+                    sortedCreatures.forEach(c => {
+                        let reqHtml = '<span class="text-green-400">自养生物</span>';
+                        if (c.foodConfig) {
+                            const names = c.foodConfig.targets.map(tid => getCreatureDef(tid).name);
+                            const joinStr = c.foodConfig.mode === 'AND' ? ' + ' : ' / ';
+                            reqHtml = `<span class="flex items-center gap-1 text-orange-300"><i data-lucide="link" class="w-3 h-3"></i> 需: ${names.join(joinStr)}</span>`;
+                        }
+                        const category = CATEGORIES[c.category];
+                        const badge = category ? `<span class="text-[9px] px-1 rounded border ${category.badgeColor} ml-2 flex items-center gap-1"><i data-lucide="${category.icon}" class="w-3 h-3"></i>${category.name}</span>` : '';
+                        const outputDisplay = `${c.baseOutput} / ${c.interval / 1000}s`;
 
-        pauseBtn.addEventListener('click', () => {
-            gameState.isPaused = !gameState.isPaused;
-            pauseBtn.innerHTML = gameState.isPaused ? `<i data-lucide="play" class="w-4 h-4"></i>` : `<i data-lucide="pause" class="w-4 h-4"></i>`;
-            lucide.createIcons();
-        });
+                        html += `
+                            <button id="btn-build-${c.id}" onclick="placeCreature('${c.id}')" class="w-full text-left relative overflow-hidden group rounded-xl border-2 transition-all duration-200 mb-2 border-gray-700 bg-secondary-dark">
+                                <div class="absolute top-2 right-2 text-[10px] text-gray-500 font-bold">Max LV.${c.maxLevel}</div>
+                                <div class="p-3 flex items-center gap-3 relative z-10">
+                                    <div class="w-12 h-12 rounded-lg ${c.fillColor} flex items-center justify-center border shrink-0"><i data-lucide="${c.icon}" class="w-6 h-6 text-white"></i></div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <div class="flex items-center overflow-hidden">
+                                                <span class="font-bold text-gray-200 truncate text-sm" id="name-${c.id}">${c.name}</span>
+                                                ${badge}
+                                            </div>
+                                            <span id="cost-text-${c.id}" class="text-xs font-mono shrink-0 ml-2"><i data-lucide="zap" class="w-3 h-3 inline"></i> ${c.cost}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
+                                            <span class="flex items-center gap-1 text-accent-energy"><i data-lucide="zap" class="w-3 h-3"></i> ${outputDisplay}</span>
+                                            ${reqHtml}
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>`;
+                    });
+                    html += `</div>`;
+                    detailPanel.innerHTML = html;
+                }
+                lucide.createIcons();
+            }
+
+            // --- 差量更新 (每帧运行) ---
+            if (cell) {
+                const def = getCreatureDef(cell.creatureId);
+                const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
+                const currentOutput = Math.floor((def.baseOutput + buffValue) * (1 + (cell.level - 1) * 0.2));
+                
+                const effEl = document.getElementById('panel-efficiency');
+                if(effEl) effEl.innerText = `${currentOutput} / ${def.interval / 1000}s`;
+
+                const lvlEl = document.getElementById('panel-level-text');
+                if(lvlEl) {
+                    const isMax = cell.level >= def.maxLevel;
+                    lvlEl.innerText = `LV.${cell.level} / ${def.maxLevel}`;
+                    lvlEl.className = isMax ? 'text-accent-gold font-bold' : 'text-gray-400';
+                }
+
+                const statusEl = document.getElementById('panel-status-text');
+                if(statusEl) {
+                    let statusHtml = '';
+                    if (cell.buffs > 0) statusHtml += `<div class="flex items-center gap-1 text-green-400 text-xs mt-1"><i data-lucide="chevrons-up" class="w-3 h-3"></i> 食物充沛 (+${Math.round(cell.buffs * 100)}%)</div>`;
+                    if (cell.symbiosis > 0) statusHtml += `<div class="flex items-center gap-1 text-cyan-400 text-xs mt-1"><i data-lucide="heart-handshake" class="w-3 h-3"></i> 环境共生 (+${Math.round(cell.symbiosis * 100)}%)</div>`;
+                    if (cell.competition < 0) statusHtml += `<div class="flex items-center gap-1 text-purple-400 text-xs mt-1"><i data-lucide="users" class="w-3 h-3"></i> 资源竞争 (${Math.round(cell.competition * 100)}%)</div>`;
+                    if (cell.debuffs > 0) statusHtml += `<div class="flex items-center gap-1 text-yellow-500 text-xs mt-1"><i data-lucide="chevrons-down" class="w-3 h-3"></i> 受到捕食 (-${Math.round(cell.debuffs * 100)}%)</div>`;
+                    if (cell.speedMultiplier <= 0) statusHtml = `<div class="flex items-center gap-1 text-red-500 text-xs mt-1"><i data-lucide="skull" class="w-3 h-3"></i> 极度饥饿/被捕食殆尽</div>`;
+                    
+                    if (statusHtml === '') statusHtml = `<div class="flex items-center gap-1 text-gray-500 text-xs mt-1">生态平衡</div>`;
+                    
+                    if (statusEl.innerHTML !== statusHtml) {
+                        statusEl.innerHTML = statusHtml;
+                        lucide.createIcons({root: statusEl});
+                    }
+                }
+
+            } else {
+                // 更新建造按钮状态
+                CREATURES.forEach(c => {
+                    const btn = document.getElementById(`btn-build-${c.id}`);
+                    const costText = document.getElementById(`cost-text-${c.id}`);
+                    const nameText = document.getElementById(`name-${c.id}`);
+                    
+                    if (btn) {
+                        const canAfford = gameState.energy >= c.cost;
+                        if (canAfford) {
+                            btn.classList.remove('border-ui-border', 'bg-primary-dark/50', 'opacity-60', 'cursor-not-allowed');
+                            btn.classList.add('border-gray-700', 'bg-secondary-dark', 'hover:border-accent-energy');
+                            btn.disabled = false;
+                            if(costText) costText.className = "text-xs font-mono text-accent-energy shrink-0 ml-2";
+                            if(nameText) nameText.className = "font-bold text-gray-200 truncate text-sm";
+                        } else {
+                            btn.classList.add('border-ui-border', 'bg-primary-dark/50', 'opacity-60', 'cursor-not-allowed');
+                            btn.classList.remove('border-gray-700', 'bg-secondary-dark', 'hover:border-accent-energy');
+                            btn.disabled = true;
+                            if(costText) costText.className = "text-xs font-mono text-red-400 shrink-0 ml-2";
+                            if(nameText) nameText.className = "font-bold text-gray-500 truncate text-sm";
+                        }
+                    }
+                });
+            }
+        }
 
         window.onload = init;
     </script>
