@@ -762,6 +762,11 @@ function placeCreature(creatureId) {
     renderGrid(); 
     lastRenderedIndex = -2; 
     renderDetailPanel(idx);
+
+    // 📱 手机种植后自动收起右侧详情抽屉
+    if (window.innerWidth <= 1024 && typeof toggleDetailPanelMobile === 'function') {
+        toggleDetailPanelMobile(false);  // 关闭右侧抽屉
+    }
 }
 
 // 调试功能
