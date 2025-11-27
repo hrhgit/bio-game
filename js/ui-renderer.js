@@ -298,49 +298,7 @@ function renderDetailPanel(index, animate = true) {
         lucide.createIcons();
     }
 
-    if (!cell) {
-        CREATURES.forEach(c => {
-            const wrapper = document.getElementById(`card-wrapper-${c.id}`);
-            const card = document.getElementById(`card-inner-${c.id}`);
-            const btn = document.getElementById(`btn-build-${c.id}`);
-            const costTextDiv = document.getElementById(`btn-cost-text-${c.id}`);
-            const outTextDiv = document.getElementById(`btn-out-text-${c.id}`);
-            
-            if (!wrapper || !card || !btn) return;
-
-            const canAfford = gameState.energy >= c.cost;
-            
-            if (canAfford) {
-                if(wrapper.classList.contains('grayscale')) {
-                    wrapper.classList.remove('grayscale', 'opacity-60', 'cursor-not-allowed');
-                    wrapper.classList.add('cursor-pointer');
-                    
-                    card.classList.remove('border-gray-700');
-                    card.classList.add('border-accent-energy', 'shadow-lg', 'neon-border', 'hover:scale-[1.01]');
-                    
-                    btn.className = "shrink-0 w-[4.5rem] flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-all active:scale-95 group/btn border-t border-x bg-gradient-to-b from-[#2a3f5a] to-[#1a2c42] hover:from-[#324a68] hover:to-[#203550] border-accent-energy/30 btn-3d-blue";
-                    btn.disabled = false;
-
-                    if(costTextDiv) costTextDiv.className = "font-mono text-lg leading-none flex items-center gap-0.5 text-accent-energy group-hover/btn:text-white transition-colors";
-                    if(outTextDiv) outTextDiv.className = "font-mono text-[10px] text-accent-life/90 group-hover/btn:text-accent-life";
-                }
-            } else {
-                if(!wrapper.classList.contains('grayscale')) {
-                    wrapper.classList.add('grayscale', 'opacity-60', 'cursor-not-allowed');
-                    wrapper.classList.remove('cursor-pointer');
-                    
-                    card.classList.add('border-gray-700');
-                    card.classList.remove('border-accent-energy', 'shadow-lg', 'neon-border', 'hover:scale-[1.01]');
-                    
-                    btn.className = "shrink-0 w-[4.5rem] flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-all active:scale-95 group/btn border-t border-x bg-gradient-to-b from-gray-800 to-gray-900 border-gray-700 btn-3d-gray";
-                    btn.disabled = true;
-
-                    if(costTextDiv) costTextDiv.className = "font-mono text-lg leading-none flex items-center gap-0.5 text-gray-400";
-                    if(outTextDiv) outTextDiv.className = "font-mono text-[10px] text-gray-600";
-                }
-            }
-        });
-    } 
+ 
     
     if (cell) {
         const def = getCreatureDef(cell.creatureId);
@@ -393,7 +351,7 @@ function renderRogueItems() {
     const baseCost = Math.round(stageConf.reqRate * 6); 
 
     let html = ''; 
-    gameState.rogueShopItems.forEach((item, i) => { 
+    gameState.rogueShopItems.forEach((item) => { 
         const cost = baseCost; 
         const canAfford = gameState.energy >= cost && !item.bought; 
 
@@ -407,26 +365,29 @@ function renderRogueItems() {
         }; 
 
         switch(item.rarity) { 
-            case 'uncommon': 
+            case '稀有': 
                 theme = { 
                     border: 'border-green-600/50', bg: 'bg-green-900/10', title: 'text-green-100', icon: 'text-green-400', badge: 'text-green-500', 
                     btnDef: 'border-green-500 text-green-400 hover:bg-green-500/20 hover:border-green-400 hover:text-green-300' 
                 }; break; 
-            case 'rare': 
+            case '罕见': 
                 theme = { 
                     border: 'border-sky-600/50', bg: 'bg-sky-900/10', title: 'text-sky-100', icon: 'text-sky-400', badge: 'text-sky-500', 
                     btnDef: 'border-sky-500 text-sky-400 hover:bg-sky-500/20 hover:border-sky-400 hover:text-sky-300' 
                 }; break; 
-            case 'epic': 
+            case '史诗': 
                 theme = { 
                     border: 'border-purple-600/50', bg: 'bg-purple-900/10', title: 'text-purple-100', icon: 'text-purple-400', badge: 'text-purple-500', 
                     btnDef: 'border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-300' 
                 }; break; 
-            case 'legendary': 
+            case '传说': 
                 theme = { 
                     border: 'border-amber-500/60', bg: 'bg-amber-900/10', title: 'text-amber-100', icon: 'text-amber-400', badge: 'text-amber-500', 
                     btnDef: 'border-amber-500 text-amber-400 hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-200' 
                 }; break; 
+            case '普通': 
+                // 普通品质使用默认主题，不需要额外设置
+                break; 
         } 
 
         const wrapperClass = item.bought 
@@ -452,12 +413,16 @@ function renderRogueItems() {
                             <div class="text-xs font-bold ${theme.title} leading-none truncate">${item.name}</div> 
                         </div> 
                     </div> 
-                    <div class="text-[9px] uppercase tracking-wider font-bold opacity-70 ${theme.badge} shrink-0">${item.rarity || 'Common'}</div> 
+                    <div class="text-[9px] font-bold opacity-70 ${theme.badge} shrink-0">${item.rarity || '普通'}</div> 
                 </div> 
                 
                 <p class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-6 opacity-90">${item.desc}</p> 
                 
-                <button class="${btnClass}" onclick="purchaseRogueItem('${item.id}')" ${item.bought || !canAfford ? 'disabled' : ''}> 
+                <button 
+                    id="rogue-item-btn-${item.id}"
+                    class="${btnClass}" 
+                    onclick="purchaseRogueItem('${item.id}')" 
+                    ${item.bought || !canAfford ? 'disabled' : ''}> 
                     ${item.bought 
                         ? '<span>已激活</span>' 
                         : `<span>购买</span> <span class="font-mono opacity-90 ml-1 flex items-center"><i data-lucide="zap" class="w-2.5 h-2.5 fill-current mr-0.5"></i>${cost}</span>` 
@@ -471,6 +436,89 @@ function renderRogueItems() {
     lucide.createIcons({ root: cont }); 
 }
 
+// 给肉鸽按钮挂一个"能量是否足够"的 watcher
+function setupRogueItemWatchers() {
+    const stageConf = getStageConfig(gameState.currentStage);
+    const baseCost = Math.round(stageConf.reqRate * 6);
+
+    uiVarMonitor.watchThreshold({
+        key: 'rogue-shop-energy',
+        getValue: () => gameState.energy,
+        target: baseCost,
+        onChange(canBuy) {
+            gameState.rogueShopItems.forEach(item => {
+                const btn = document.getElementById(`rogue-item-btn-${item.id}`);
+                if (!btn || item.bought) return;
+
+                if (canBuy) {
+                    btn.disabled = false;
+                    btn.classList.remove('cursor-not-allowed');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('cursor-not-allowed');
+                }
+            });
+        }
+    });
+}
+
+// 右侧建造按钮：使用监视器控制「能量是否足够」 → 启用 / 禁用 + 动画样式
+function setupBuildButtonWatchers() {
+    CREATURES.forEach(c => {
+        uiVarMonitor.watchThreshold({
+            key: `build-btn-${c.id}`,
+            getValue: () => gameState.energy,
+            target: c.cost,
+            onChange(canAfford) {
+                const wrapper = document.getElementById(`card-wrapper-${c.id}`);
+                const card = document.getElementById(`card-inner-${c.id}`);
+                const btn = document.getElementById(`btn-build-${c.id}`);
+                const costTextDiv = document.getElementById(`btn-cost-text-${c.id}`);
+                const outTextDiv = document.getElementById(`btn-out-text-${c.id}`);
+
+                // 当前没有打开建造面板时，这些元素都不存在，直接跳过
+                if (!wrapper || !card || !btn) return;
+
+                if (canAfford) {
+                    // 可购买：去灰、加 hover、3D 蓝按钮
+                    wrapper.classList.remove('grayscale', 'opacity-60', 'cursor-not-allowed');
+                    wrapper.classList.add('cursor-pointer');
+                    
+                    card.classList.remove('border-gray-700');
+                    card.classList.add('border-accent-energy', 'shadow-lg', 'neon-border', 'hover:scale-[1.01]');
+                    
+                    btn.className = "shrink-0 w-[4.5rem] flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-all active:scale-95 group/btn border-t border-x bg-gradient-to-b from-[#2a3f5a] to-[#1a2c42] hover:from-[#324a68] hover:to-[#203550] border-accent-energy/30 btn-3d-blue";
+                    btn.disabled = false;
+
+                    if (costTextDiv) {
+                        costTextDiv.className = "font-mono text-lg leading-none flex items-center gap-0.5 text-accent-energy group-hover/btn:text-white transition-colors";
+                    }
+                    if (outTextDiv) {
+                        outTextDiv.className = "font-mono text-[10px] text-accent-life/90 group-hover/btn:text-accent-life";
+                    }
+                } else {
+                    // 不可购买：灰掉、禁止 hover 高亮
+                    wrapper.classList.add('grayscale', 'opacity-60', 'cursor-not-allowed');
+                    wrapper.classList.remove('cursor-pointer');
+                    
+                    card.classList.add('border-gray-700');
+                    card.classList.remove('border-accent-energy', 'shadow-lg', 'neon-border', 'hover:scale-[1.01]');
+                    
+                    btn.className = "shrink-0 w-[4.5rem] flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-all active:scale-95 group/btn border-t border-x bg-gradient-to-b from-gray-800 to-gray-900 border-gray-700 btn-3d-gray";
+                    btn.disabled = true;
+
+                    if (costTextDiv) {
+                        costTextDiv.className = "font-mono text-lg leading-none flex items-center gap-0.5 text-gray-400";
+                    }
+                    if (outTextDiv) {
+                        outTextDiv.className = "font-mono text-[10px] text-gray-600";
+                    }
+                }
+            }
+        });
+    });
+}
+
 // 渲染关卡面板
 function renderStagePanel() {
     const panel = document.getElementById('stage-panel');
@@ -481,66 +529,122 @@ function renderStagePanel() {
     const ratio = Math.max(0, Math.min(1, rate / conf.reqRate));
     const payCost = conf.payCost;
 
-    const canFreeClear = rate >= conf.reqRate;
-    const canPayClear = gameState.energy >= payCost;
-
     panel.innerHTML = ` 
-                <div class="rounded-xl border border-ui-border bg-primary-dark/70 p-3 space-y-3 backdrop-blur-sm"> 
-                    
-                    <div class="flex gap-2 items-stretch"> 
-                        
-                        <div class="flex-1 flex flex-col justify-between gap-2"> 
-                            <div class="flex justify-between items-start"> 
-                                <div> 
-                                    <div class="text-[11px] text-gray-400 mb-0.5">当前关卡</div> 
-                                    <div class="text-lg text-white font-semibold leading-none">第 ${conf.stage} 关</div> 
-                                </div> 
-                                <div class="text-right"> 
-                                    <div class="text-[11px] text-gray-400 mb-0.5">目标效率</div> 
-                                    <div class="text-xs text-accent-life font-mono leading-none">≥ ${conf.reqRate.toFixed(1)}/s</div> 
-                                </div> 
-                            </div> 
-
-                            <div class="space-y-1"> 
-                                <div class="flex justify-between text-[10px] text-gray-400"> 
-                                    <span>当前效率</span> 
-                                    <span id="stage-current-rate" class="font-mono ${canFreeClear ? 'text-accent-life' : 'text-gray-300'}">
-                                ${rate.toFixed(1)}/s
-                            </span> 
-                                </div> 
-                                <div class="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden border border-white/5"> 
-                                    <div id="stage-progress-bar" class="h-2 rounded-full bg-gradient-to-r from-green-400 to-sky-400 transition-all duration-300 ease-out"
-                                 style="width: ${ratio * 100}%;"></div> 
-                                </div> 
-                            </div> 
+        <div class="rounded-xl border border-ui-border bg-primary-dark/70 p-3 space-y-3 backdrop-blur-sm"> 
+            <div class="flex gap-2 items-stretch"> 
+                <div class="flex-1 flex flex-col justify-between gap-2"> 
+                    <div class="flex justify-between items-start"> 
+                        <div> 
+                            <div class="text-[11px] text-gray-400 mb-0.5">当前关卡</div> 
+                            <div class="text-lg text-white font-semibold leading-none">第 ${conf.stage} 关</div> 
                         </div> 
-
-                        <button 
-                            class="w-20 rounded-lg shadow-md transition-all duration-200 flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
-                                ${canFreeClear 
-                                        ? 'bg-accent-gold text-slate-900 hover:bg-[#fcd34d] hover:scale-[1.02] active:scale-[0.96] cursor-pointer shadow-orange-500/20' 
-                                        : 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'}" 
-                            onclick="${canFreeClear ? 'tryCompleteStage(false)' : ''}" 
-                        > 
-                            <span class="font-extrabold text-sm leading-none">达成</span> 
-                            <i data-lucide="circle-arrow-right" class="w-5 h-5 stroke-[2.5]"></i> 
-                        </button> 
+                        <div class="text-right"> 
+                            <div class="text-[11px] text-gray-400 mb-0.5">目标效率</div> 
+                            <div class="text-xs text-accent-life font-mono leading-none">≥ ${conf.reqRate.toFixed(1)}/s</div> 
+                        </div> 
                     </div> 
 
-                    <button 
-                        class="w-full py-1.5 rounded-lg border text-[11px] transition-transform transition-colors duration-200 flex items-center justify-center gap-1 
-                            ${canPayClear 
-                                    ? 'border-accent-gold/40 text-accent-gold hover:bg-accent-gold/10 active:scale-[0.98]' 
-                                    : 'border-gray-700/50 text-gray-600 cursor-not-allowed'}" 
-                        onclick="${canPayClear ? 'tryCompleteStage(true)' : ''}" 
-                    > 
-                        支付 <i data-lucide="zap" class="w-3 h-3 inline"></i> ${payCost} 强行通过 
-                    </button> 
-
+                    <div class="space-y-1"> 
+                        <div class="flex justify-between text-[10px] text-gray-400"> 
+                            <span>当前效率</span> 
+                            <span id="stage-current-rate" class="font-mono text-gray-300">
+                                ${rate.toFixed(1)}/s
+                            </span> 
+                        </div> 
+                        <div class="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden border border-white/5"> 
+                            <div id="stage-progress-bar" class="h-2 rounded-full bg-gradient-to-r from-green-400 to-sky-400 transition-all duration-300 ease-out"
+                                 style="width: ${ratio * 100}%;"></div> 
+                        </div> 
+                    </div> 
                 </div> 
-            `; 
+
+                <!-- FREE CLEAR 按钮：静态结构 + id -->
+                <button 
+                    id="stage-free-btn"
+                    class="w-20 rounded-lg shadow-md transition-all duration-200 flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
+                           bg-gray-700 text-gray-500 cursor-not-allowed opacity-50"
+                > 
+                    <span class="font-extrabold text-sm leading-none">达成</span> 
+                    <i data-lucide="circle-arrow-right" class="w-5 h-5 stroke-[2.5]"></i> 
+                </button> 
+            </div> 
+
+            <!-- PAY CLEAR 按钮：同理 -->
+            <button 
+                id="stage-pay-btn"
+                class="w-full py-1.5 rounded-lg border text-[11px] transition-transform transition-colors duration-200 flex items-center justify-center gap-1 
+                       border-gray-700/50 text-gray-600 cursor-not-allowed"
+            > 
+                支付 <i data-lucide="zap" class="w-3 h-3 inline"></i> ${payCost} 强行通过 
+            </button> 
+        </div>`; 
 
     lucide.createIcons({ root: panel });
+}
+
+// 给关卡按钮挂 watcher
+function setupStageUiWatchers() {
+    const conf = getStageConfig(gameState.currentStage);
+
+    // 1. 监控 当前效率 是否达到目标 (free clear)
+    uiVarMonitor.watchThreshold({
+        key: 'stage-free-clear',
+        getValue: () => gameState.lastRatePerSec || 0,
+        target: conf.reqRate,
+        onChange(reached) {
+            const btn = document.getElementById('stage-free-btn');
+            if (!btn) return;
+
+            if (reached) {
+                // 达标：高亮、可点击
+                btn.className = `
+                    w-20 rounded-lg shadow-md transition-all duration-200
+                    flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
+                    bg-accent-gold text-slate-900 hover:bg-[#fcd34d]
+                    hover:scale-[1.02] active:scale-[0.96] cursor-pointer shadow-orange-500/20
+                `.replace(/\s+/g, ' ');
+                btn.onclick = () => tryCompleteStage(false);
+            } else {
+                // 未达标：灰掉、禁用
+                btn.className = `
+                    w-20 rounded-lg shadow-md transition-all duration-200
+                    flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
+                    bg-gray-700 text-gray-500 cursor-not-allowed opacity-50
+                `.replace(/\s+/g, ' ');
+                btn.onclick = null;
+            }
+        }
+    });
+
+    // 2. 监控 能量是否足够强行通过 (pay clear)
+    uiVarMonitor.watchThreshold({
+        key: 'stage-pay-clear',
+        getValue: () => gameState.energy,
+        target: conf.payCost,
+        onChange(canPay) {
+            const btn = document.getElementById('stage-pay-btn');
+            if (!btn) return;
+
+            if (canPay) {
+                btn.className = `
+                    w-full py-1.5 rounded-lg border text-[11px]
+                    transition-transform transition-colors duration-200
+                    flex items-center justify-center gap-1 
+                    border-accent-gold/40 text-accent-gold
+                    hover:bg-accent-gold/10 active:scale-[0.98]
+                `.replace(/\s+/g, ' ');
+                btn.onclick = () => tryCompleteStage(true);
+            } else {
+                btn.className = `
+                    w-full py-1.5 rounded-lg border text-[11px]
+                    transition-transform transition-colors duration-200
+                    flex items-center justify-center gap-1 
+                    border-gray-700/50 text-gray-600 cursor-not-allowed
+                `.replace(/\s+/g, ' ');
+                btn.onclick = null;
+            }
+        }
+    });
 }
 
 // 更新关卡面板动态部分

@@ -14,6 +14,62 @@ let gameState = {
     rogueShopItems: []
 };
 
+// 全局 UI 变量监控器（只负责算：状态是否跨过阈值，不直接操作 DOM）
+const uiVarMonitor = {
+    currentStage: null,
+    watchers: [],   // { key, getValue, target, cmp, lastReached, onChange }
+
+    // 每进一关，重置监视器
+    initForStage(stageId) {
+        this.currentStage = stageId;
+        this.watchers = [];
+    },
+
+    /**
+     * 监听一个「达到阈值」的变量/状态
+     *  - key: 唯一标识（方便 debug）
+     *  - getValue: () => any      当前值（通常来自 gameState）
+     *  - target: any              阈值
+     *  - cmp: (value, target) => boolean，默认 v >= t
+     *  - onChange: (reached:boolean, value:any) => void
+     *  - fireImmediately: 是否在注册时立刻回调一次
+     */
+    watchThreshold({ key, getValue, target, cmp = (v, t) => v >= t, onChange, fireImmediately = true }) {
+        const value = getValue();
+        const reached = cmp(value, target);
+
+        const watcher = {
+            key,
+            getValue,
+            target,
+            cmp,
+            lastReached: reached,
+            onChange
+        };
+
+        this.watchers.push(watcher);
+
+        // 注册时先同步一次当前状态
+        if (fireImmediately && typeof onChange === 'function') {
+            onChange(reached, value);
+        }
+    },
+
+    // 每 tick 调用一次，驱动所有 watcher
+    tick() {
+        for (const w of this.watchers) {
+            const value = w.getValue();
+            const reached = w.cmp(value, w.target);
+            if (reached !== w.lastReached) {
+                w.lastReached = reached;
+                if (typeof w.onChange === 'function') {
+                    w.onChange(reached, value);
+                }
+            }
+        }
+    }
+};
+
 // 工具函数
 function hasMutation(id) { 
     return gameState.activeMutations.has(id); 
@@ -66,6 +122,29 @@ function getStageConfig(stage) {
     };
 }
 
+function enterStage(stage) {
+    // 设置当前关卡
+    gameState.currentStage = stage;
+
+    // 刷新本关商店数据（不在里面渲染 UI）
+    rollRogueShop();
+
+    // 初始化本关的 UI 监控器
+    uiVarMonitor.initForStage(stage);
+
+    // 渲染左侧面板 UI
+    renderStagePanel();
+    renderRogueItems();
+
+    // 注册本关需要的 watcher（左：关卡按钮 + 肉鸽；右：建造按钮）
+    setupStageUiWatchers();
+    setupRogueItemWatchers();
+    setupBuildButtonWatchers();   // ✅ 新增：右侧建造按钮用同一套逻辑
+
+    // 刷新一次动态部分
+    updateStagePanelDynamic();
+}
+
 function rollRogueShop() {
     const pool = [...ROGUE_ITEMS_POOL];
     const picked = [];
@@ -76,7 +155,7 @@ function rollRogueShop() {
     }
 
     gameState.rogueShopItems = picked.map(item => ({ ...item, bought: false }));
-    renderRogueItems();
+    // ❌ 不再这里调用 renderRogueItems()
 }
 
 function purchaseRogueItem(itemId) {
@@ -98,8 +177,7 @@ function purchaseRogueItem(itemId) {
     }
 
     SoundSystem.playUpgrade();
-    renderRogueItems();
-    renderStagePanel();
+    // 不再需要手动重绘，watcher 会处理按钮状态更新
 }
 
 function tryCompleteStage(payInstead) {
@@ -121,17 +199,16 @@ function tryCompleteStage(payInstead) {
     }
 
     SoundSystem.playUpgrade();
-    gameState.currentStage += 1;
-    rollRogueShop();
-    renderStagePanel();
+    const nextStage = gameState.currentStage + 1;
+    // 直接用 enterStage 统一处理关卡切换 + UI + watcher
+    enterStage(nextStage);
 }
 
 // 能量更新
 function updateEnergy(delta) {
     gameState.energy += delta;
     energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
-    renderRogueItems();
-    renderStagePanel();
+    // 不再这里重绘左侧面板，让 watcher + gameLoop 来控制状态
 }
 
 // 布局加成检查
@@ -373,6 +450,9 @@ function gameLoop() {
     if (gameState.selectedCellIndex !== -1) { 
         renderDetailPanel(gameState.selectedCellIndex, false); 
     }
+
+    // ✅ 驱动所有 UI watcher（关卡按钮 + 肉鸽按钮）
+    uiVarMonitor.tick();
 }
 
 // 生产处理

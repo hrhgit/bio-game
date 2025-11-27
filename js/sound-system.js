@@ -9,7 +9,7 @@ const SoundSystem = {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioContext();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.3; 
+        this.masterGain.gain.value = 1.0; 
         this.masterGain.connect(this.ctx.destination);
     },
     
@@ -21,7 +21,7 @@ const SoundSystem = {
             if (this.masterGain) this.masterGain.gain.value = 0;
         } else {
             btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5"></i>';
-            if (this.masterGain) this.masterGain.gain.value = 0.3;
+            if (this.masterGain) this.masterGain.gain.value = 1.0;
             this.init(); 
             if(this.ctx.state === 'suspended') this.ctx.resume();
         }

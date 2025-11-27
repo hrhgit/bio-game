@@ -156,15 +156,29 @@
             </div>
         </div>
 
+        <!-- 中央区域：上方是缩小后的网格，下方是道具栏 -->
         <div class="flex-1 flex flex-col items-center justify-center relative z-0 p-4">
-            
-            <div class="relative w-full max-w-[640px] aspect-square">
-                
-                <div id="grid-container" class="absolute inset-0 z-10">
+            <div class="flex flex-col items-center justify-start w-full max-w-[640px] gap-3">
+
+                <!-- 网格区域：进一步缩小确保完整显示 -->
+                <div class="relative w-full max-w-[480px] md:max-w-[520px] aspect-square -mt-2">
+                    <div id="grid-container" class="absolute inset-0 z-10">
                     </div>
+                </div>
+
+                <!-- 中下方道具栏 -->
+                <div
+                    id="item-bar-container"
+                    class="w-full min-h-[72px] rounded-xl border border-ui-border bg-primary-dark/80 backdrop-blur-sm
+                           flex items-center gap-2 px-3 shadow-lg overflow-x-auto custom-scrollbar"
+                >
+                    <!-- 之后用 JS 往这里塞道具卡片 -->
+                    <span class="text-[11px] text-gray-500">
+                        道具栏：这里可以展示主动技能、一次性道具等（先占位，后面用 JS 渲染）
+                    </span>
+                </div>
 
             </div>
-
         </div>
 
         <div class="w-full lg:w-1/4 max-w-md bg-secondary-dark/90 backdrop-blur-md flex flex-col border-l border-ui-border z-10 shadow-2xl">
@@ -328,8 +342,8 @@
             gameState.cells = Array(gameState.gridSize * gameState.gridSize).fill(null);
             renderGrid();
 
-            rollRogueShop();
-            renderStagePanel();
+            // 原来的 rollRogueShop() / renderStagePanel() 用 enterStage 替代
+            enterStage(gameState.currentStage);
 
             lucide.createIcons();
             

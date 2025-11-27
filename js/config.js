@@ -106,21 +106,21 @@ const STAGE_CONFIG = {
 
 // 肉鸽道具池
 const ROGUE_ITEMS_POOL = [
-    { id:'chloroplast_outburst', name:'叶绿爆发', desc:'所有 T1 生产者 +30% 速度', mutationId:'chloroplast_outburst', rarity: 'common' },
-    { id:'edge_effect', name:'边缘效应', desc:'边缘格子 +25% 速度', mutationId:'edge_effect', rarity: 'common' },
+    { id:'chloroplast_outburst', name:'叶绿爆发', desc:'所有 T1 生产者 +30% 速度', mutationId:'chloroplast_outburst', rarity: '普通' },
+    { id:'edge_effect', name:'边缘效应', desc:'边缘格子 +25% 速度', mutationId:'edge_effect', rarity: '普通' },
     
-    { id:'interlaced_complement', name:'交错生态', desc:'四周没有同类时 +40% 速度', mutationId:'interlaced_complement', rarity: 'uncommon' },
-    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +20% 速度', mutationId:'predator_instinct', rarity: 'uncommon' },
+    { id:'interlaced_complement', name:'交错生态', desc:'四周没有同类时 +40% 速度', mutationId:'interlaced_complement', rarity: '稀有' },
+    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +20% 速度', mutationId:'predator_instinct', rarity: '稀有' },
     
-    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +50% 产出', mutationId:'triplet_resonance', rarity: 'rare' },
-    { id:'quantum_link', name:'量子牵引', desc:'共生/竞争改为包含斜角邻居', mutationId:'quantum_link', rarity: 'rare' },
+    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +50% 产出', mutationId:'triplet_resonance', rarity: '罕见' },
+    { id:'quantum_link', name:'量子牵引', desc:'共生/竞争改为包含斜角邻居', mutationId:'quantum_link', rarity: '罕见' },
     
-    { id:'quad_core', name:'四核矩阵', desc:'2x2 方阵同类时 +80% 速度', mutationId:'quad_core', rarity: 'epic' },
-    { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: 'epic' },
-    { id:'greedy_digestion', name:'贪婪消化', desc:'食物富余转化为 Buff 的效率提高', mutationId:'greedy_digestion', rarity: 'epic' },
+    { id:'quad_core', name:'四核矩阵', desc:'2x2 方阵同类时 +80% 速度', mutationId:'quad_core', rarity: '史诗' },
+    { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: '史诗' },
+    { id:'greedy_digestion', name:'贪婪消化', desc:'食物富余转化为 Buff 的效率提高', mutationId:'greedy_digestion', rarity: '史诗' },
     
-    { id:'central_dogma', name:'中央意识核', desc:'中心 3x3 区域 +100% 速度', mutationId:'central_dogma', rarity: 'legendary' },
-    { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: 'legendary' }
+    { id:'central_dogma', name:'中央意识核', desc:'中心 3x3 区域 +100% 速度', mutationId:'central_dogma', rarity: '传说' },
+    { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '传说' }
 ];
 
 // 游戏基础配置
