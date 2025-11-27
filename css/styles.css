@@ -11,6 +11,41 @@
 
 @media (max-width: 1024px) {
     .mobile-hide { display: none; }
+
+    /* 📱 手机端：左右栏变为全屏抽屉，默认收起，只保留中间棋盘 */
+    #left-panel,
+    #detail-panel-wrapper {
+        position: absolute;
+        top: 4rem;              /* header 高度 h-16 = 4rem */
+        bottom: 0;
+        width: 100%;
+        max-width: none;
+        background-color: rgba(15, 23, 42, 0.98); /* 深色半透明背景 */
+        backdrop-filter: blur(10px);
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        transition: transform 0.25s ease-out, opacity 0.2s ease-out;
+        opacity: 0;
+        pointer-events: none;   /* 收起时不能挡住中间棋盘的点击 */
+        z-index: 30;
+    }
+
+    #left-panel {
+        left: 0;
+        transform: translateX(-100%);   /* 默认从左侧缩回去 */
+    }
+
+    #detail-panel-wrapper {
+        right: 0;
+        transform: translateX(100%);    /* 默认从右侧缩回去 */
+    }
+
+    /* 打开抽屉时：滑入并可点击 */
+    #left-panel.mobile-panel-open,
+    #detail-panel-wrapper.mobile-panel-open {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 /* 网格样式 */

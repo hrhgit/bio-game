@@ -132,7 +132,28 @@
             </svg>
         </div>
 
-        <div class="w-full lg:w-1/4 max-w-xs bg-secondary-dark/90 backdrop-blur-md p-4 flex flex-col border-r border-ui-border z-10 mobile-hide shadow-2xl">
+        <!-- 🔻 新增：手机端左右抽屉开关按钮（lg 以上隐藏） -->
+        <button
+            id="btn-toggle-left-panel"
+            class="fixed left-3 top-[76px] z-40 px-3 py-1.5 rounded-full bg-black/60 border border-ui-border
+                   text-[12px] text-gray-200 flex items-center gap-1 shadow-lg lg:hidden"
+        >
+            <i data-lucide="swords" class="w-4 h-4"></i>
+            <span>试炼</span>
+        </button>
+
+        <button
+            id="btn-toggle-detail-panel"
+            class="fixed right-3 top-[76px] z-40 px-3 py-1.5 rounded-full bg-black/60 border border-ui-border
+                   text-[12px] text-gray-200 flex items-center gap-1 shadow-lg lg:hidden"
+        >
+            <i data-lucide="dna-off" class="w-4 h-4"></i>
+            <span>详情</span>
+        </button>
+        <!-- 🔺 新增结束 -->
+
+        <div id="left-panel"
+             class="w-full lg:w-1/4 max-w-xs bg-secondary-dark/90 backdrop-blur-md p-4 flex flex-col border-r border-ui-border z-10 shadow-2xl">
             <h2 class="text-lg text-accent-gold border-b border-ui-border pb-2 flex items-center gap-2 mb-3">
                 <i data-lucide="swords" class="w-5 h-5"></i> 深海试炼
             </h2>
@@ -181,7 +202,8 @@
             </div>
         </div>
 
-        <div class="w-full lg:w-1/4 max-w-md bg-secondary-dark/90 backdrop-blur-md flex flex-col border-l border-ui-border z-10 shadow-2xl">
+        <div id="detail-panel-wrapper"
+             class="w-full lg:w-1/4 max-w-md bg-secondary-dark/90 backdrop-blur-md flex flex-col border-l border-ui-border z-10 shadow-2xl">
             <div class="p-4 border-b border-ui-border">
                 <h2 class="text-xl text-gray-200 flex items-center gap-2">
                     <i data-lucide="dna-off" class="w-5 h-5"></i> 物种图鉴

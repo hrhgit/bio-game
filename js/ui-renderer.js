@@ -601,6 +601,64 @@ function showRogueItemDetail(itemId) {
     lucide.createIcons({ root: detailPanel });
 }
 
+// ================== 手机端侧栏抽屉 ==================
+
+function isMobileViewport() {
+    return window.innerWidth <= 1024;
+}
+
+function toggleLeftPanelMobile(force) {
+    const panel = document.getElementById('left-panel');
+    if (!panel) return;
+    const willOpen = typeof force === 'boolean'
+        ? force
+        : !panel.classList.contains('mobile-panel-open');
+
+    // 打开左抽屉时顺便关掉右抽屉，避免重叠
+    const detail = document.getElementById('detail-panel-wrapper');
+    if (willOpen && detail) {
+        detail.classList.remove('mobile-panel-open');
+    }
+
+    panel.classList.toggle('mobile-panel-open', willOpen);
+}
+
+function toggleDetailPanelMobile(force) {
+    const panel = document.getElementById('detail-panel-wrapper');
+    if (!panel) return;
+    const willOpen = typeof force === 'boolean'
+        ? force
+        : !panel.classList.contains('mobile-panel-open');
+
+    // 打开右抽屉时顺便关掉左抽屉
+    const left = document.getElementById('left-panel');
+    if (willOpen && left) {
+        left.classList.remove('mobile-panel-open');
+    }
+
+    panel.classList.toggle('mobile-panel-open', willOpen);
+}
+
+// 绑定两个按钮
+document.addEventListener('DOMContentLoaded', () => {
+    const leftBtn = document.getElementById('btn-toggle-left-panel');
+    const rightBtn = document.getElementById('btn-toggle-detail-panel');
+
+    if (leftBtn) {
+        leftBtn.addEventListener('click', () => {
+            if (!isMobileViewport()) return;
+            toggleLeftPanelMobile();
+        });
+    }
+
+    if (rightBtn) {
+        rightBtn.addEventListener('click', () => {
+            if (!isMobileViewport()) return;
+            toggleDetailPanelMobile();
+        });
+    }
+});
+
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
 // 给肉鸽按钮挂 watcher：根据“当前能量是否足够且未购买”来控制启用/禁用
 // 肉鸽道具按钮：用监视器统一控制「是否可购买」 → 启用 / 禁用 + 颜色

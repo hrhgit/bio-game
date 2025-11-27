@@ -684,6 +684,11 @@ function selectCell(index) {
     gameState.selectedCellIndex = index;
     highlightCell(index);
     renderDetailPanel(index);
+
+    // 📱 手机端：选中格子时自动呼出右侧详情抽屉
+    if (window.innerWidth <= 1024 && typeof toggleDetailPanelMobile === 'function') {
+        toggleDetailPanelMobile(true);
+    }
 }
 
 function highlightCell(index) {
