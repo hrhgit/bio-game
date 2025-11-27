@@ -97,11 +97,68 @@ const CREATURES = [
     }
 ];
 
+// =====================
+// 生物索引表 & 快捷函数
+// =====================
+const CREATURE_MAP = {};
+CREATURES.forEach(c => {
+    CREATURE_MAP[c.id] = c;
+});
+
+function getCreatureDef(id) {
+    return CREATURE_MAP[id];
+}
+
+
 // 关卡配置
 const STAGE_CONFIG = {
     baseRate: 20,      // 第 1 关目标产出 /s
-    rateStep: 30,      // 每关增加多少目标产出（已提高以拉大关卡差距）
+    rateStep: 20,      // 每关增加多少目标产出（已提高以拉大关卡差距）
     payMultiplier: 30  // 跳关需要的能量倍数
+};
+
+// 肉鸽道具稀有度主题
+const RARITY_THEME = {
+    '普通': {
+        border: 'border-gray-700',
+        bg: 'bg-gray-800/50',
+        title: 'text-gray-300',
+        icon: 'text-gray-500',
+        badge: 'text-gray-500',
+        btnEnabled: 'border-gray-500 text-gray-300 hover:bg-gray-700 hover:border-gray-400 hover:text-gray-300'
+    },
+    '稀有': {
+        border: 'border-green-600/50',
+        bg: 'bg-green-900/50',
+        title: 'text-green-100',
+        icon: 'text-green-400',
+        badge: 'text-green-500',
+        btnEnabled: 'border-green-600/50 text-green-400 hover:bg-green-500/20 hover:border-green-400/50 hover:text-green-300'
+    },
+    '罕见': {
+        border: 'border-sky-600/50',
+        bg: 'bg-sky-900/50',
+        title: 'text-sky-100',
+        icon: 'text-sky-400',
+        badge: 'text-sky-500',
+        btnEnabled: 'border-sky-600/50 text-sky-400 hover:bg-sky-500/20 hover:border-sky-400/50 hover:text-sky-300'
+    },
+    '史诗': {
+        border: 'border-purple-600/50',
+        bg: 'bg-purple-900/50',
+        title: 'text-purple-100',
+        icon: 'text-purple-400',
+        badge: 'text-purple-500',
+        btnEnabled: 'border-purple-600/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400/50 hover:text-purple-300'
+    },
+    '传说': {
+        border: 'border-amber-500/50',
+        bg: 'bg-amber-900/50',
+        title: 'text-amber-100',
+        icon: 'text-amber-400',
+        badge: 'text-amber-500',
+        btnEnabled: 'border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-300/50 hover:text-amber-200'
+    }
 };
 
 // 肉鸽道具池
@@ -128,3 +185,5 @@ const CONFIG = {
     initialEnergy: 100, 
     tickRate: 100 
 };
+
+const MAX_ROGUE_ITEM_BAR = 5;

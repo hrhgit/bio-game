@@ -12,78 +12,154 @@ let gameState = {
     currentStage: 1,
     lastRatePerSec: 0,
     rogueShopItems: [],
-    // 跟踪已解锁的生物
-    unlockedCreatures: ['algae'] // 初始只解锁光合蓝藻
+    // 新增：已经装备在道具栏里的肉鸽道具（用 id 存）
+    rogueItemBar: [],
+    // ✅ 已解锁的生物 id：基础生产者默认解锁
+    unlockedCreatureIds: new Set(['algae', 'kelp'])
+};
+function createCell(creatureId) {
+    return {
+        creatureId,
+        level: 1,
+        progress: 0,
+        // 生态影响相关默认值
+        buffs: 0,
+        debuffs: 0,
+        symbiosis: 0,
+        competition: 0,
+        mutationBuffs: 0,
+        speedMultiplier: 1,
+        state: 'normal' // 'normal' | 'dying' | 'dead'
+    };
+}
+// 邻居缓存：减少每 tick 重算邻居的开销
+const neighborCache = {
+    orth: [], // 上下左右
+    diag: []  // 斜角
 };
 
-// 检查生物是否已解锁
-function isCreatureUnlocked(creatureId) {
-    return gameState.unlockedCreatures.includes(creatureId);
+function buildNeighborCache(size) {
+    neighborCache.orth = [];
+    neighborCache.diag = [];
+
+    const w = size;
+    const h = size;
+
+    for (let i = 0; i < w * h; i++) {
+        const x = i % w;
+        const y = Math.floor(i / w);
+
+        // 上下左右
+        const orth = [];
+        if (y > 0) orth.push(i - w);
+        if (y < h - 1) orth.push(i + w);
+        if (x > 0) orth.push(i - 1);
+        if (x < w - 1) orth.push(i + 1);
+
+        // 斜角
+        const diag = [];
+        if (y > 0 && x > 0) diag.push(i - w - 1);
+        if (y > 0 && x < w - 1) diag.push(i - w + 1);
+        if (y < h - 1 && x > 0) diag.push(i + w - 1);
+        if (y < h - 1 && x < w - 1) diag.push(i + w + 1);
+
+        neighborCache.orth[i] = orth;
+        neighborCache.diag[i] = diag;
+    }
 }
 
-// 根据关卡解锁生物
-function unlockCreaturesByStage(stage) {
-    const unlockMap = {
-        1: ['jelly'], // 第一关解锁荧光浮游虫
-        2: ['crab', 'shrimp'], // 第二关解锁晶石蟹和电光虾
-        4: ['ghost'], // 第四关解锁幽灵水母
-        5: ['turtle', 'eel'], // 第五关解锁装甲海龟和雷霆鳗
-        7: ['hunter'], // 第七关解锁深海猎手
-        8: ['leviathan'] // 第八关解锁深渊巨兽
-    };
-    
-    const creaturesToUnlock = unlockMap[stage] || [];
-    creaturesToUnlock.forEach(id => {
-        if (!gameState.unlockedCreatures.includes(id)) {
-            gameState.unlockedCreatures.push(id);
-        }
-    });
-    
-    // 根据关卡解锁更大的格子
-    if (stage >= 9) {
-        gameState.gridSize = 6;
-    } else if (stage >= 6) {
-        gameState.gridSize = 5;
-    } else if (stage >= 3) {
-        gameState.gridSize = 4;
-    }
-    // 重置网格以应用新的大小
-    resetGrid();
-}
 
-// 重置网格以适应新的大小
-function resetGrid() {
-    const newSize = gameState.gridSize;
-    const newCells = [];
-    
-    // 保留现有细胞数据，但调整到新的网格大小
-    for (let i = 0; i < newSize * newSize; i++) {
-        // 只保留在原网格范围内的细胞
-        if (i < gameState.cells.length) {
-            newCells.push(gameState.cells[i]);
-        } else {
-            newCells.push(null);
+// 关卡解锁表：按关卡解锁生物和棋盘大小（使用 id）
+const STAGE_UNLOCKS = {
+    1:  { creatureIds: ['plankton'] },                   // 荧光浮游虫
+    3:  { creatureIds: ['crab', 'shrimp'] },             // 晶石蟹、电光虾
+    5:  { gridSize: 4 },                                 // 解锁 4x4
+    7:  { creatureIds: ['jellyfish'] },                  // 幽灵水母
+    9:  { creatureIds: ['turtle', 'eel'] },              // 装甲海龟、雷霆鳗
+    11: { gridSize: 5 },                                 // 解锁 5x5
+    13: { creatureIds: ['hunter'] },                     // 深海猎手
+    15: { creatureIds: ['leviathan'] },                  // 深渊巨兽
+    17: { gridSize: 6 }                                  // 解锁 6x6
+    // 17 关以后不再解锁新东西，就不用写
+};
+
+// 把当前棋盘从 oldSize 扩展到 newSize，保留原有生物在左上角
+function expandGridPreserveCreatures(newSize) {
+    const oldSize = gameState.gridSize;
+    if (newSize <= oldSize) return;
+
+    const oldCells = gameState.cells;
+    const newCells = Array(newSize * newSize).fill(null);
+
+    for (let y = 0; y < oldSize; y++) {
+        for (let x = 0; x < oldSize; x++) {
+            const oldIdx = y * oldSize + x;
+            const newIdx = y * newSize + x;
+            newCells[newIdx] = oldCells[oldIdx];
         }
     }
-    
+
+    gameState.gridSize = newSize;
     gameState.cells = newCells;
-    renderGrid();
+    buildNeighborCache(newSize);
+
+    // 防止选中的格子越界
+    if (gameState.selectedCellIndex >= newCells.length) {
+        gameState.selectedCellIndex = -1;
+    }
 }
+
+// 应用某一关的解锁效果（生物解锁 + 棋盘扩建）
+function applyStageUnlocks(stage) {
+    const unlock = STAGE_UNLOCKS[stage];
+    if (!unlock) return;
+
+    // 1）解锁生物（按 id）
+    if (unlock.creatureIds && Array.isArray(unlock.creatureIds)) {
+        unlock.creatureIds.forEach(id => {
+            gameState.unlockedCreatureIds.add(id);
+        });
+    }
+
+    // 2）扩建棋盘（只增不减）
+    if (unlock.gridSize && unlock.gridSize > gameState.gridSize) {
+        // ✅ 扩建棋盘但保留已有生物
+        expandGridPreserveCreatures(unlock.gridSize);
+
+        // 重新渲染网格
+        renderGrid();
+
+        // 如果当前仍有选中格子，刷新右侧面板；否则显示默认提示
+        if (gameState.selectedCellIndex !== -1) {
+            renderDetailPanel(gameState.selectedCellIndex, false);
+        } else {
+            renderDetailPanel(-1, false);
+        }
+    }
+}
+
+
 
 // 全局 UI 变量监控器（只负责算：状态是否跨过阈值，不直接操作 DOM）
 const uiVarMonitor = {
     currentStage: null,
-    watchers: [],   // { key, getValue, target, cmp, lastReached, onChange }
+    // 用 Map 而不是数组：以 key 为索引，天然去重
+    watchers: new Map(),   // key => { key, getValue, target, cmp, lastReached, onChange }
 
     // 每进一关，重置监视器
     initForStage(stageId) {
         this.currentStage = stageId;
-        this.watchers = [];
+        this.watchers.clear();
+    },
+
+    // 如果你在别处想手动清空，也可以调用 reset()
+    reset() {
+        this.watchers.clear();
     },
 
     /**
      * 监听一个「达到阈值」的变量/状态
-     *  - key: 唯一标识（方便 debug）
+     *  - key: 唯一标识（方便 debug & 用来去重）
      *  - getValue: () => any      当前值（通常来自 gameState）
      *  - target: any              阈值
      *  - cmp: (value, target) => boolean，默认 v >= t
@@ -91,19 +167,30 @@ const uiVarMonitor = {
      *  - fireImmediately: 是否在注册时立刻回调一次
      */
     watchThreshold({ key, getValue, target, cmp = (v, t) => v >= t, onChange, fireImmediately = true }) {
+        if (!key) {
+            console.warn('[uiVarMonitor] watchThreshold 需要提供唯一 key');
+            return;
+        }
+        if (typeof getValue !== 'function') {
+            console.warn('[uiVarMonitor] watchThreshold 需要提供 getValue 函数, key =', key);
+            return;
+        }
+
+        const safeCmp = typeof cmp === 'function' ? cmp : (v, t) => v >= t;
         const value = getValue();
-        const reached = cmp(value, target);
+        const reached = safeCmp(value, target);
 
         const watcher = {
             key,
             getValue,
             target,
-            cmp,
+            cmp: safeCmp,
             lastReached: reached,
             onChange
         };
 
-        this.watchers.push(watcher);
+        // ✅ 用 key 覆盖旧的 watcher，防止同一关内重复注册同一个 key
+        this.watchers.set(key, watcher);
 
         // 注册时先同步一次当前状态
         if (fireImmediately && typeof onChange === 'function') {
@@ -113,7 +200,7 @@ const uiVarMonitor = {
 
     // 每 tick 调用一次，驱动所有 watcher
     tick() {
-        for (const w of this.watchers) {
+        for (const w of this.watchers.values()) {
             const value = w.getValue();
             const reached = w.cmp(value, w.target);
             if (reached !== w.lastReached) {
@@ -126,14 +213,13 @@ const uiVarMonitor = {
     }
 };
 
+
 // 工具函数
 function hasMutation(id) { 
     return gameState.activeMutations.has(id); 
 }
 
-function getCreatureDef(id) { 
-    return CREATURES.find(c => c.id === id); 
-}
+
 
 function getXY(index, size) { 
     return { x: index % size, y: Math.floor(index / size) }; 
@@ -145,27 +231,11 @@ function getIndex(x, y, size) {
 }
 
 function getNeighbors(index) {
-    const size = gameState.gridSize; 
-    const neighbors = [];
-    const row = Math.floor(index / size); 
-    const col = index % size;
-    if (row > 0) neighbors.push(index - size); 
-    if (row < size - 1) neighbors.push(index + size);
-    if (col > 0) neighbors.push(index - 1); 
-    if (col < size - 1) neighbors.push(index + 1);
-    return neighbors;
+    return neighborCache.orth[index] || [];
 }
 
-function getDiagonalNeighbors(index) { 
-    const size = gameState.gridSize; 
-    const { x, y } = getXY(index, size); 
-    const diags = []; 
-    const coords = [[x-1, y-1], [x+1, y-1], [x-1, y+1], [x+1, y+1]]; 
-    coords.forEach(([nx, ny]) => { 
-        const idx = getIndex(nx, ny, size); 
-        if (idx !== -1) diags.push(idx); 
-    }); 
-    return diags; 
+function getDiagonalNeighbors(index) {
+    return neighborCache.diag[index] || [];
 }
 
 // 关卡相关函数
@@ -179,25 +249,31 @@ function getStageConfig(stage) {
 }
 
 function enterStage(stage) {
-    // 设置当前关卡
+    // 1. 更新当前关卡
     gameState.currentStage = stage;
 
-    // 刷新本关商店数据（不在里面渲染 UI）
+    // 2. 应用这一关的解锁（可能解锁新生物 / 扩大棋盘）
+    applyStageUnlocks(stage);
+
+    // 3. 刷新本关商店数据
     rollRogueShop();
 
-    // 初始化本关的 UI 监控器
+    // 4. 初始化本关 UI 监控器
     uiVarMonitor.initForStage(stage);
 
-    // 渲染左侧面板 UI
+    // 5. 渲染左侧：关卡面板 + 肉鸽道具
     renderStagePanel();
     renderRogueItems();
+    renderRogueItemBar(); // ✅ 新增：刷新道具栏
 
-    // 注册本关需要的 watcher（左：关卡按钮 + 肉鸽；右：建造按钮）
+    // 6. 注册各类 watcher（关卡按钮 / 肉鸽按钮 / 右侧建造按钮）
     setupStageUiWatchers();
     setupRogueItemWatchers();
-    setupBuildButtonWatchers();   // ✅ 新增：右侧建造按钮用同一套逻辑
+    if (typeof setupBuildButtonWatchers === 'function') {
+        setupBuildButtonWatchers();
+    }
 
-    // 刷新一次动态部分
+    // 7. 刷新一次动态文本部分
     updateStagePanelDynamic();
 }
 
@@ -214,30 +290,58 @@ function rollRogueShop() {
     // ❌ 不再这里调用 renderRogueItems()
 }
 
+// 购买肉鸽道具
 function purchaseRogueItem(itemId) {
-    const conf = getStageConfig(gameState.currentStage);
-    const baseCost = Math.round(conf.reqRate * 6);
-    const item = gameState.rogueShopItems.find(it => it.id === itemId);
-    if (!item || item.bought) return;
+    const stageConf = getStageConfig(gameState.currentStage);
+    const baseCost = Math.round(stageConf.reqRate * 6);
 
-    // 能量不足：提示错误
-    if (gameState.energy < baseCost) {
-        SoundSystem.playError();
+    // 1) 道具栏已满：点击按钮无反应，不扣能量，不改按钮样式
+    if (gameState.rogueItemBar.length >= MAX_ROGUE_ITEM_BAR) {
+        // 这里可以按需加个音效或 console 提示，但不要动按钮状态
+        // playErrorSound && playErrorSound();
+        console.log('[rogue] item bar is full, cannot purchase more');
         return;
     }
 
-    // 扣费 + 标记购买
-    updateEnergy(-baseCost);
-    item.bought = true;
+    // 2) 在当前商店列表中找到该 item
+    const shopItem = gameState.rogueShopItems.find(it => it.id === itemId);
+    if (!shopItem) {
+        console.warn('[rogue] item not found in shop:', itemId);
+        return;
+    }
 
-    if (item.mutationId) {
-        gameState.activeMutations.add(item.mutationId);
+    // 已经买过了就不重复买（正常逻辑）
+    if (shopItem.bought) {
+        return;
+    }
+
+    // 3) 能量不足：保持你原来的处理（按钮会通过 watcher 变灰，这里也不动按钮样式）
+    if (gameState.energy < baseCost) {
+        // 这里也可以播放一个错误音效或 shake 提示
+        SoundSystem.playError();
+        console.log('[rogue] not enough energy to buy', itemId);
+        return;
+    }
+
+    // 4) 真正购买：扣能量、标记已购买、应用效果、推入道具栏
+    updateEnergy(-baseCost);
+    shopItem.bought = true;
+
+    // 道具栏：用 id 记录就够了（不重复加入）
+    if (!gameState.rogueItemBar.includes(itemId)) {
+        gameState.rogueItemBar.push(itemId);
+        // 如果你以后想要"从道具栏移除"，也是操作这个数组
+    }
+
+    // 应用对应的 mutation / buff（如果你之前就有类似逻辑，这里照用原来的）
+    if (shopItem.mutationId) {
+        gameState.activeMutations.add(shopItem.mutationId);
     }
 
     SoundSystem.playUpgrade();
 
     // ✅ 立即更新当前这个道具按钮的 UI：变为“已激活 + 灰掉”
-    const btn = document.getElementById(`rogue-item-btn-${item.id}`);
+    const btn = document.getElementById(`rogue-item-btn-${shopItem.id}`);
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `<span>已激活</span>`;
@@ -248,7 +352,7 @@ function purchaseRogueItem(itemId) {
     }
 
     // 如果你在 renderRogueItems 外层有 wrapper，也可以顺便灰掉：
-    const wrapper = document.getElementById(`rogue-item-wrapper-${item.id}`);
+    const wrapper = document.getElementById(`rogue-item-wrapper-${shopItem.id}`);
     if (wrapper) {
         wrapper.classList.add('opacity-50', 'grayscale', 'scale-95');
         wrapper.classList.remove('hover:scale-[1.02]');
@@ -285,9 +389,8 @@ function tryCompleteStage(payInstead) {
 
 // 能量更新
 function updateEnergy(delta) {
-    gameState.energy += delta;
+    gameState.energy = Math.max(0, gameState.energy + delta);
     energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
-    // 不再这里重绘左侧面板，让 watcher + gameLoop 来控制状态
 }
 
 // 布局加成检查
@@ -555,33 +658,28 @@ function handleProduction(idx, cell, def) {
 // 能量生产
 function produceEnergy(idx, amount) {
     updateEnergy(amount);
-    
+
     const cellEl = document.getElementById(`cell-visual-${idx}`);
-    
     if (cellEl) {
-        const rect = cellEl.getBoundingClientRect();
-        const float = document.createElement('div');
-        
-        float.className = 'fixed pointer-events-none z-20 flex items-center justify-center gap-1 text-xl font-black animate-float-up';
-        float.style.left = `${rect.left + rect.width / 2}px`;
-        float.style.top = `${rect.top}px`;
-        float.style.transform = 'translate(-50%, 0)';
-        
-        float.innerHTML = `<i data-lucide="zap" class="w-4 h-4 fill-current"></i> ${amount}`;
-        float.style.color = '#fff';
-        
-        document.body.appendChild(float);
-        lucide.createIcons({ root: float });
-        
-        setTimeout(() => float.remove(), 1500);
-    }
-    
-    if (gameState.selectedCellIndex !== -1) {
-        if (!gameState.cells[gameState.selectedCellIndex] || gameState.cells[gameState.selectedCellIndex]) {
-            renderDetailPanel(gameState.selectedCellIndex, false);
+        const floatCont = cellEl.parentElement.querySelector('.float-container');
+        if (floatCont) {
+            const float = document.createElement('div');
+            float.className = 'text-xs text-accent-energy font-mono animate-fade-up';
+            float.innerText = `+${Math.floor(amount)}`;
+            floatCont.appendChild(float);
+            setTimeout(() => float.remove(), 800);
         }
     }
+
+    // 如果当前有选中格子，并且格子里还存在生物，就刷新右侧详情面板
+    if (
+        gameState.selectedCellIndex !== -1 &&
+        gameState.cells[gameState.selectedCellIndex]
+    ) {
+        renderDetailPanel(gameState.selectedCellIndex, false);
+    }
 }
+
 
 // 生物操作
 function removeCreature() { 
@@ -676,7 +774,7 @@ function placeCreature(creatureId) {
 
     SoundSystem.playPlace();
     updateEnergy(-def.cost);
-    gameState.cells[idx] = { creatureId: creatureId, level: 1, progress: 0, speedMultiplier: 1.0, state: 'normal' };
+    gameState.cells[idx] = createCell(creatureId);
     
     renderGrid(); 
     lastRenderedIndex = -2; 

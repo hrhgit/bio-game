@@ -339,6 +339,7 @@
 
         // 初始化游戏
         function init() {
+            buildNeighborCache(gameState.gridSize);
             gameState.cells = Array(gameState.gridSize * gameState.gridSize).fill(null);
             renderGrid();
 

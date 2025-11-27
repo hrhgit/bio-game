@@ -1,5 +1,63 @@
 // UI渲染相关功能
 let lastRenderedIndex = -2;
+let lastPanelMode = 'empty';
+
+// 判断某个生物是否已经解锁（按 id）
+function isCreatureUnlocked(creatureDef) {
+    return gameState.unlockedCreatureIds.has(creatureDef.id);
+}
+
+// 根据 id 获取肉鸽道具定义
+function getRogueItemDef(id) {
+    return ROGUE_ITEMS_POOL.find(it => it.id === id);
+}
+
+// 渲染单个格子的 HTML 结构
+function buildCellInnerHTML(i, cellData) {
+    if (cellData) {
+        const c = getCreatureDef(cellData.creatureId);
+        const isMax = cellData.level >= c.maxLevel;
+        const borderClass = isMax ? 'max-level-border' : c.borderColor;
+
+        return `
+            <div id="cell-visual-${i}" class="absolute inset-0 rounded-xl border-2 transition-all duration-300 flex items-center justify-center overflow-hidden ${c.baseColor} ${borderClass}">
+                <div id="cell-progress-${i}" class="absolute bottom-0 left-0 w-full transition-all duration-100 ease-linear z-0 ${c.fillColor}" style="height: ${cellData.progress}%"></div>
+                <div id="cell-overlay-${i}" class="absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0"></div>
+                <div class="absolute inset-0 z-10 flex items-center justify-center icon-wrapper transition-transform duration-300">
+                    <i data-lucide="${c.icon}" class="w-8 h-8 ${c.color}"></i>
+                </div>
+                <div class="absolute bottom-1.5 left-0 w-full text-center z-10">
+                    <span id="cell-level-${i}" class="text-[10px] ${isMax ? 'text-accent-gold font-black' : 'text-white/70'} drop-shadow-md">
+                        LV.${cellData.level}${isMax ? ' MAX' : ''}
+                    </span>
+                </div>
+                <div id="cell-rate-${i}" class="absolute top-1 right-1 z-20 text-[10px]"></div>
+            </div>
+            <div class="float-container absolute -top-2 left-0 w-full pointer-events-none z-50 flex justify-center overflow-visible"></div>
+        `;
+    } else {
+        return `
+            <div id="cell-visual-${i}" class="absolute inset-0 rounded-xl border-2 border-ui-border bg-primary-dark hover:border-gray-500 opacity-50 hover:opacity-100 flex items-center justify-center transition-all">
+                <i data-lucide="plus" class="w-6 h-6 text-gray-500"></i>
+            </div>
+        `;
+    }
+}
+
+// 局部渲染某个 index 的格子
+function renderSingleCell(i) {
+    const cellData = gameState.cells[i];
+    let cell = document.getElementById(`cell-container-${i}`);
+    if (!cell) {
+        cell = document.createElement('div');
+        cell.id = `cell-container-${i}`;
+        cell.className = 'relative group w-full h-full';
+        cell.onclick = () => selectCell(i);
+        gridEl.appendChild(cell);
+    }
+    cell.innerHTML = buildCellInnerHTML(i, cellData);
+}
+
 
 // 渲染网格
 function renderGrid() {
@@ -7,46 +65,25 @@ function renderGrid() {
     gridEl.style.gridTemplateColumns = `repeat(${gameState.gridSize}, 1fr)`;
     gridEl.style.gridTemplateRows = `repeat(${gameState.gridSize}, 1fr)`;
 
-    gameState.cells.forEach((cellData, i) => {
+    // 根据棋盘大小调整格子间距（3x3 大一点，6x6 紧凑一点）
+    const baseGap = 48;
+    const gap = Math.max(16, baseGap - (gameState.gridSize - 3) * 6);
+    gridEl.style.gap = `${gap}px`;
+
+    for (let i = 0; i < gameState.gridSize * gameState.gridSize; i++) {
+        const cellData = gameState.cells[i];
         const cell = document.createElement('div');
         cell.id = `cell-container-${i}`;
-        cell.className = 'relative group w-full h-full'; 
+        cell.className = 'relative group w-full h-full';
         cell.onclick = () => selectCell(i);
-
-        if (cellData) {
-            const c = getCreatureDef(cellData.creatureId);
-            const isMax = cellData.level >= c.maxLevel;
-            const borderClass = isMax ? 'max-level-border' : c.borderColor;
-            
-            cell.innerHTML = `
-                <div id="cell-visual-${i}" class="absolute inset-0 rounded-xl border-2 transition-all duration-300 flex items-center justify-center overflow-hidden ${c.baseColor} ${borderClass}">
-                    <div id="cell-progress-${i}" class="absolute bottom-0 left-0 w-full transition-all duration-100 ease-linear z-0 ${c.fillColor}" style="height: ${cellData.progress}%"></div>
-                    <div id="cell-overlay-${i}" class="absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0"></div>
-                    <div class="absolute inset-0 z-10 flex items-center justify-center icon-wrapper transition-transform duration-300">
-                        <i data-lucide="${c.icon}" class="w-8 h-8 ${c.color}"></i>
-                    </div>
-                    <div class="absolute bottom-1.5 left-0 w-full text-center z-10">
-                        <span id="cell-level-${i}" class="text-[10px] ${isMax ? 'text-accent-gold font-black' : 'text-white/70'} drop-shadow-md">
-                            LV.${cellData.level}${isMax ? ' MAX' : ''}
-                        </span>
-                    </div>
-                    <div id="cell-rate-${i}" class="absolute top-1 right-1 z-20 text-[10px]"></div>
-                </div>
-                <div class="float-container absolute -top-2 left-0 w-full pointer-events-none z-50 flex justify-center overflow-visible"></div>
-            `;
-        } else {
-            cell.innerHTML = `
-                <div id="cell-visual-${i}" class="absolute inset-0 rounded-xl border-2 border-ui-border bg-primary-dark hover:border-gray-500 opacity-50 hover:opacity-100 flex items-center justify-center transition-all">
-                    <i data-lucide="plus" class="w-6 h-6 text-gray-500"></i>
-                </div>
-            `;
-        }
+        cell.innerHTML = buildCellInnerHTML(i, cellData || null);
         gridEl.appendChild(cell);
-    });
-    
+    }
+
     if (gameState.selectedCellIndex !== -1) highlightCell(gameState.selectedCellIndex);
     lucide.createIcons();
 }
+
 
 // 更新单元格视觉效果
 function updateCellVisuals(idx, cellData) {
@@ -122,22 +159,26 @@ function updateCellVisuals(idx, cellData) {
 // 渲染详情面板
 function renderDetailPanel(index, animate = true) {
     if (index === -1) {
-        if (lastRenderedIndex !== -1) {
-            detailPanel.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-60"><i data-lucide="microscope" class="w-16 h-16 mb-4 stroke-1"></i><p class="text-lg">请选择区域</p></div>`;
+        if (lastPanelMode !== 'empty') {
+            detailPanel.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-60">
+                    <i data-lucide="microscope" class="w-16 h-16 mb-4 stroke-1"></i>
+                    <p class="text-lg">请选择区域</p>
+                </div>`;
             lucide.createIcons();
             lastRenderedIndex = -1;
+            lastPanelMode = 'empty';
         }
         return;
     }
 
     const cell = gameState.cells[index];
-    const isCellEmpty = !cell; 
-    
-    const needsFullRender = (index !== lastRenderedIndex) || 
-                            (lastRenderedIndex === index && isCellEmpty !== (document.getElementById('build-list') !== null));
+    const currentMode = cell ? 'detail' : 'build';
+    const needsFullRender = (index !== lastRenderedIndex) || (currentMode !== lastPanelMode);
 
     if (needsFullRender) {
         lastRenderedIndex = index;
+        lastPanelMode = currentMode;
         const animClass = animate ? 'animate-fade-in' : '';
         
         if (cell) {
@@ -173,7 +214,10 @@ function renderDetailPanel(index, animate = true) {
                 </div>`;
         } else {
             let html = `<div id="build-list" class="space-y-3 ${animClass} pb-4">`;
-            const sortedCreatures = [...CREATURES].sort((a, b) => a.cost - b.cost);
+            // 只显示已解锁的生物，并按价格排序
+            const sortedCreatures = CREATURES
+                .filter(c => isCreatureUnlocked(c))
+                .sort((a, b) => a.cost - b.cost);
             
             const neighbors = getNeighbors(index);
             const neighborCreatureIds = neighbors.map(nIdx => gameState.cells[nIdx]?.creatureId).filter(Boolean);
@@ -355,54 +399,23 @@ function renderRogueItems() {
         const cost = baseCost; 
         const canAfford = gameState.energy >= cost && !item.bought; 
 
-        let theme = { 
-            border: 'border-gray-700', 
-            bg: 'bg-gray-800/50', 
-            title: 'text-gray-300', 
-            icon: 'text-gray-500', 
-            btnDef: 'border-gray-700 text-gray-300 hover:bg-gray-700 hover:border-gray-600', 
-            badge: 'text-gray-500' 
-        }; 
+        const rarity = item.rarity || '普通';
+        const theme = RARITY_THEME[rarity] || RARITY_THEME['普通'];
 
-        switch(item.rarity) { 
-            case '稀有': 
-                theme = { 
-                    border: 'border-green-600/50', bg: 'bg-green-900/50', title: 'text-green-100', icon: 'text-green-400', badge: 'text-green-500', 
-                    btnDef: 'border-green-600/50 text-green-400 hover:bg-green-500/20 hover:border-green-400/50 hover:text-green-300' 
-                }; break; 
-            case '罕见': 
-                theme = { 
-                    border: 'border-sky-600/50', bg: 'bg-sky-900/50', title: 'text-sky-100', icon: 'text-sky-400', badge: 'text-sky-500', 
-                    btnDef: 'border-sky-600/50 text-sky-400 hover:bg-sky-500/20 hover:border-sky-400/50 hover:text-sky-300' 
-                }; break; 
-            case '史诗': 
-                theme = { 
-                    border: 'border-purple-600/50', bg: 'bg-purple-900/50', title: 'text-purple-100', icon: 'text-purple-400', badge: 'text-purple-500', 
-                    btnDef: 'border-purple-600/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400/50 hover:text-purple-300' 
-                }; break; 
-            case '传说': 
-                theme = { 
-                    border: 'border-amber-500/50', bg: 'bg-amber-900/50', title: 'text-amber-100', icon: 'text-amber-400', badge: 'text-amber-500', 
-                    btnDef: 'border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-300/50 hover:text-amber-200' 
-                }; break; 
-            case '普通': 
-                // 普通品质使用默认主题，不需要额外设置
-                break; 
-        } 
+        const wrapperClass = item.bought
+            ? `p-2 rounded-lg border-2 border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95`
+            : `p-2 rounded-lg border-2 ${theme.border} ${theme.bg} transition-all hover:shadow-lg`;
 
-        const wrapperClass = item.bought 
-            ? `p-2 rounded-lg border-2 border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95` 
-            : `p-2 rounded-lg border-2 ${theme.border} ${theme.bg} transition-all hover:shadow-lg`; 
+        let btnClass = "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 transition-all flex items-center justify-center gap-1 shadow-sm ";
 
-        let btnClass = "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 transition-all flex items-center justify-center gap-1 shadow-sm "; 
-        
-        if (item.bought) { 
-            btnClass += "border-gray-800 text-gray-600 bg-transparent cursor-default"; 
-        } else if (canAfford) { 
-            btnClass += `${theme.btnDef}`; 
-        } else { 
-            btnClass += "border-gray-800 text-gray-600 cursor-not-allowed"; 
-        } 
+        if (item.bought) {
+            btnClass += "border-gray-800 text-gray-600 bg-transparent cursor-default";
+        } else if (canAfford) {
+            btnClass += theme.btnEnabled;
+        } else {
+            btnClass += "border-gray-800 text-gray-600 cursor-not-allowed";
+        }
+
 
         html += ` 
             <div class="${wrapperClass}"> 
@@ -438,6 +451,56 @@ function renderRogueItems() {
     lucide.createIcons({ root: cont }); 
 }
 
+// 渲染下方道具栏（最多 5 个）
+function renderRogueItemBar() {
+    const cont = document.getElementById('item-bar-container');
+    if (!cont) return;
+
+    cont.className = "w-full h-full flex items-center justify-center";
+
+    const itemsInBar = gameState.rogueItemBar || [];
+
+    // 没有任何道具时，显示一段提示文案
+    if (!itemsInBar.length) {
+        cont.innerHTML = `
+            <div class="text-xs text-gray-500 opacity-70">
+                道具栏：还没有携带任何增益道具
+            </div>
+        `;
+        return;
+    }
+
+    // 有道具时，用图标展示
+    let html = `
+        <div class="flex items-center gap-3 px-2 py-1 rounded-xl bg-primary-dark/60 border border-ui-border/70 shadow-inner">
+    `;
+
+    itemsInBar.slice(0, MAX_ROGUE_ITEM_BAR).forEach((itemId) => {
+        const def = getRogueItemDef(itemId);
+        if (!def) return;
+
+        html += `
+            <div class="relative group">
+                <div class="w-10 h-10 rounded-lg ${def.bgColor || 'bg-gray-700'} flex items-center justify-center border border-white/10 shadow-md">
+                    <i data-lucide="${def.icon || 'sparkles'}" class="w-5 h-5 text-white"></i>
+                </div>
+                <!-- 悬停提示：黑底白字圆角块 -->
+                <div class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                            absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full
+                            px-2 py-1 bg-black text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50">
+                    ${def.name}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    cont.innerHTML = html;
+
+    // 创建 lucide 图标
+    lucide.createIcons({ root: cont });
+}
+
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
 // 给肉鸽按钮挂 watcher：根据“当前能量是否足够且未购买”来控制启用/禁用
 // 肉鸽道具按钮：用监视器统一控制「是否可购买」 → 启用 / 禁用 + 颜色
@@ -471,44 +534,15 @@ function setupRogueItemWatchers() {
                 const baseBtnClass =
                     "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
                     "transition-all flex items-center justify-center gap-1 shadow-sm ";
-
                 // 各品质对应的可购买样式（和你 renderRogueItems 里的 theme.btnDef 保持一致）
-                let enabledClass =
-                    "border-gray-500 text-gray-300 hover:bg-gray-700 hover:border-gray-400 hover:text-gray-300";
-
-                switch (item.rarity) {
-                    case '罕见':   // 稀有 / 罕见
-                        enabledClass =
-                            "border-sky-500 text-sky-400 " +
-                            "hover:bg-sky-500/20 hover:border-sky-400 hover:text-sky-300";
-                        break;
-                    case '史诗':
-                        enabledClass =
-                            "border-purple-500 text-purple-400 " +
-                            "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-300";
-                        break;
-                    case '传说':
-                        enabledClass =
-                            "border-amber-500 text-amber-400 " +
-                            "hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-200";
-                        break;
-                    case '普通':
-                    default:
-                        // 用默认主题
-                        enabledClass =
-                            "border-gray-500 text-gray-300 " +
-                            "hover:bg-gray-700 hover:border-gray-400 hover:text-gray-300";
-                        break;
-                }
-
+                const theme = RARITY_THEME[item.rarity || '普通'] || RARITY_THEME['普通'];
+                const enabledClass = theme.btnEnabled;
                 const disabledClass = "border-gray-800 text-gray-600 cursor-not-allowed";
 
                 if (canBuy) {
-                    // ✅ 现在可以购买：启用 + 品质色按钮
                     btn.disabled = false;
                     btn.className = baseBtnClass + enabledClass;
                 } else {
-                    // ❌ 现在不能购买：禁用 + 灰色按钮
                     btn.disabled = true;
                     btn.className = baseBtnClass + disabledClass;
                 }
@@ -523,17 +557,19 @@ function setupRogueItemWatchers() {
 
 // 右侧建造按钮：使用监视器控制「能量是否足够」 → 启用 / 禁用 + 动画样式
 function setupBuildButtonWatchers() {
-    CREATURES.forEach(c => {
-        uiVarMonitor.watchThreshold({
-            key: `build-btn-${c.id}`,
-            getValue: () => gameState.energy,
-            target: c.cost,
-            onChange(canAfford) {
-                const wrapper = document.getElementById(`card-wrapper-${c.id}`);
-                const card = document.getElementById(`card-inner-${c.id}`);
-                const btn = document.getElementById(`btn-build-${c.id}`);
-                const costTextDiv = document.getElementById(`btn-cost-text-${c.id}`);
-                const outTextDiv = document.getElementById(`btn-out-text-${c.id}`);
+    CREATURES
+        .filter(c => gameState.unlockedCreatureIds.has(c.id))
+        .forEach(c => {
+            uiVarMonitor.watchThreshold({
+                key: `build-btn-${c.id}`,
+                getValue: () => gameState.energy,
+                target: c.cost,
+                onChange(canAfford) {
+                    const wrapper = document.getElementById(`card-wrapper-${c.id}`);
+                    const card = document.getElementById(`card-inner-${c.id}`);
+                    const btn = document.getElementById(`btn-build-${c.id}`);
+                    const costTextDiv = document.getElementById(`btn-cost-text-${c.id}`);
+                    const outTextDiv = document.getElementById(`btn-out-text-${c.id}`);
 
                 // 当前没有打开建造面板时，这些元素都不存在，直接跳过
                 if (!wrapper || !card || !btn) return;
