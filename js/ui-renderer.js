@@ -357,33 +357,33 @@ function renderRogueItems() {
 
         let theme = { 
             border: 'border-gray-700', 
-            bg: 'bg-gray-800/40', 
+            bg: 'bg-gray-800/50', 
             title: 'text-gray-300', 
             icon: 'text-gray-500', 
-            btnDef: 'border-gray-500 text-gray-300 hover:bg-gray-700 hover:border-gray-400', 
+            btnDef: 'border-gray-700 text-gray-300 hover:bg-gray-700 hover:border-gray-600', 
             badge: 'text-gray-500' 
         }; 
 
         switch(item.rarity) { 
             case '稀有': 
                 theme = { 
-                    border: 'border-green-600/50', bg: 'bg-green-900/10', title: 'text-green-100', icon: 'text-green-400', badge: 'text-green-500', 
-                    btnDef: 'border-green-500 text-green-400 hover:bg-green-500/20 hover:border-green-400 hover:text-green-300' 
+                    border: 'border-green-600/50', bg: 'bg-green-900/50', title: 'text-green-100', icon: 'text-green-400', badge: 'text-green-500', 
+                    btnDef: 'border-green-600/50 text-green-400 hover:bg-green-500/20 hover:border-green-400/50 hover:text-green-300' 
                 }; break; 
             case '罕见': 
                 theme = { 
-                    border: 'border-sky-600/50', bg: 'bg-sky-900/10', title: 'text-sky-100', icon: 'text-sky-400', badge: 'text-sky-500', 
-                    btnDef: 'border-sky-500 text-sky-400 hover:bg-sky-500/20 hover:border-sky-400 hover:text-sky-300' 
+                    border: 'border-sky-600/50', bg: 'bg-sky-900/50', title: 'text-sky-100', icon: 'text-sky-400', badge: 'text-sky-500', 
+                    btnDef: 'border-sky-600/50 text-sky-400 hover:bg-sky-500/20 hover:border-sky-400/50 hover:text-sky-300' 
                 }; break; 
             case '史诗': 
                 theme = { 
-                    border: 'border-purple-600/50', bg: 'bg-purple-900/10', title: 'text-purple-100', icon: 'text-purple-400', badge: 'text-purple-500', 
-                    btnDef: 'border-purple-500 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-300' 
+                    border: 'border-purple-600/50', bg: 'bg-purple-900/50', title: 'text-purple-100', icon: 'text-purple-400', badge: 'text-purple-500', 
+                    btnDef: 'border-purple-600/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400/50 hover:text-purple-300' 
                 }; break; 
             case '传说': 
                 theme = { 
-                    border: 'border-amber-500/60', bg: 'bg-amber-900/10', title: 'text-amber-100', icon: 'text-amber-400', badge: 'text-amber-500', 
-                    btnDef: 'border-amber-500 text-amber-400 hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-200' 
+                    border: 'border-amber-500/50', bg: 'bg-amber-900/50', title: 'text-amber-100', icon: 'text-amber-400', badge: 'text-amber-500', 
+                    btnDef: 'border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-300/50 hover:text-amber-200' 
                 }; break; 
             case '普通': 
                 // 普通品质使用默认主题，不需要额外设置
@@ -391,8 +391,8 @@ function renderRogueItems() {
         } 
 
         const wrapperClass = item.bought 
-            ? `p-2 rounded-lg border border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95` 
-            : `p-2 rounded-lg border ${theme.border} ${theme.bg} transition-all hover:scale-[1.02] hover:shadow-lg`; 
+            ? `p-2 rounded-lg border-2 border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95` 
+            : `p-2 rounded-lg border-2 ${theme.border} ${theme.bg} transition-all hover:shadow-lg`; 
 
         let btnClass = "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 transition-all flex items-center justify-center gap-1 shadow-sm "; 
         
@@ -408,7 +408,9 @@ function renderRogueItems() {
             <div class="${wrapperClass}"> 
                 <div class="flex justify-between items-start mb-0.5"> 
                     <div class="flex items-center gap-2 overflow-hidden"> 
-                        <i data-lucide="sparkles" class="w-3.5 h-3.5 ${theme.icon} shrink-0"></i> 
+                        <div class="w-7 h-7 rounded-full ${item.bgColor || 'bg-gray-500'} flex items-center justify-center shrink-0">
+                            <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 text-white"></i>
+                        </div>
                         <div class="min-w-0"> 
                             <div class="text-xs font-bold ${theme.title} leading-none truncate">${item.name}</div> 
                         </div> 
@@ -437,30 +439,87 @@ function renderRogueItems() {
 }
 
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
+// 给肉鸽按钮挂 watcher：根据“当前能量是否足够且未购买”来控制启用/禁用
+// 肉鸽道具按钮：用监视器统一控制「是否可购买」 → 启用 / 禁用 + 颜色
 function setupRogueItemWatchers() {
     const stageConf = getStageConfig(gameState.currentStage);
     const baseCost = Math.round(stageConf.reqRate * 6);
 
-    uiVarMonitor.watchThreshold({
-        key: 'rogue-shop-energy',
-        getValue: () => gameState.energy,
-        target: baseCost,
-        onChange(canBuy) {
-            gameState.rogueShopItems.forEach(item => {
+    gameState.rogueShopItems.forEach(item => {
+        uiVarMonitor.watchThreshold({
+            key: `rogue-item-${item.id}`,
+            // 当前是否可以购买：能量足够 && 未购买
+            getValue: () => (gameState.energy >= baseCost && !item.bought),
+            target: true,
+            cmp: (val, target) => !!val === target, // 只在 true/false 变化时触发
+            onChange(canBuy) {
                 const btn = document.getElementById(`rogue-item-btn-${item.id}`);
-                if (!btn || item.bought) return;
+                if (!btn) return;
+
+                // 已经买过的，锁死样式，不再改
+                if (item.bought) {
+                    btn.disabled = true;
+                    btn.className =
+                        "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
+                        "transition-all flex items-center justify-center gap-1 shadow-sm " +
+                        "border-gray-800 text-gray-600 bg-transparent cursor-default";
+                    btn.innerHTML = `<span>已激活</span>`;
+                    return;
+                }
+
+                // 公共基础样式（你原来 btnClass 的前半段）
+                const baseBtnClass =
+                    "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
+                    "transition-all flex items-center justify-center gap-1 shadow-sm ";
+
+                // 各品质对应的可购买样式（和你 renderRogueItems 里的 theme.btnDef 保持一致）
+                let enabledClass =
+                    "border-gray-500 text-gray-300 hover:bg-gray-700 hover:border-gray-400 hover:text-gray-300";
+
+                switch (item.rarity) {
+                    case '罕见':   // 稀有 / 罕见
+                        enabledClass =
+                            "border-sky-500 text-sky-400 " +
+                            "hover:bg-sky-500/20 hover:border-sky-400 hover:text-sky-300";
+                        break;
+                    case '史诗':
+                        enabledClass =
+                            "border-purple-500 text-purple-400 " +
+                            "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-300";
+                        break;
+                    case '传说':
+                        enabledClass =
+                            "border-amber-500 text-amber-400 " +
+                            "hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-200";
+                        break;
+                    case '普通':
+                    default:
+                        // 用默认主题
+                        enabledClass =
+                            "border-gray-500 text-gray-300 " +
+                            "hover:bg-gray-700 hover:border-gray-400 hover:text-gray-300";
+                        break;
+                }
+
+                const disabledClass = "border-gray-800 text-gray-600 cursor-not-allowed";
 
                 if (canBuy) {
+                    // ✅ 现在可以购买：启用 + 品质色按钮
                     btn.disabled = false;
-                    btn.classList.remove('cursor-not-allowed');
+                    btn.className = baseBtnClass + enabledClass;
                 } else {
+                    // ❌ 现在不能购买：禁用 + 灰色按钮
                     btn.disabled = true;
-                    btn.classList.add('cursor-not-allowed');
+                    btn.className = baseBtnClass + disabledClass;
                 }
-            });
-        }
+
+                // 按钮里的文字保持原来逻辑（不在这里改 innerHTML）
+                // 初始渲染时已经写好 “购买 + 价格”，这里只负责样式和禁用状态。
+            }
+        });
     });
 }
+
 
 // 右侧建造按钮：使用监视器控制「能量是否足够」 → 启用 / 禁用 + 动画样式
 function setupBuildButtonWatchers() {

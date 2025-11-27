@@ -342,15 +342,16 @@
             gameState.cells = Array(gameState.gridSize * gameState.gridSize).fill(null);
             renderGrid();
 
-            // 原来的 rollRogueShop() / renderStagePanel() 用 enterStage 替代
             enterStage(gameState.currentStage);
 
             lucide.createIcons();
             
             document.addEventListener('click', () => { 
-                if(SoundSystem.ctx && SoundSystem.ctx.state === 'suspended') SoundSystem.ctx.resume(); 
-            }, {once:true});
-            
+                if (SoundSystem.ctx && SoundSystem.ctx.state === 'suspended') {
+                    SoundSystem.ctx.resume(); 
+                }
+            }, { once: true });
+
             energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
             buildEncyclopedia();
         }

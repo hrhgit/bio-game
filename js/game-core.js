@@ -11,8 +11,64 @@ let gameState = {
     activeMutations: new Set(),
     currentStage: 1,
     lastRatePerSec: 0,
-    rogueShopItems: []
+    rogueShopItems: [],
+    // 跟踪已解锁的生物
+    unlockedCreatures: ['algae'] // 初始只解锁光合蓝藻
 };
+
+// 检查生物是否已解锁
+function isCreatureUnlocked(creatureId) {
+    return gameState.unlockedCreatures.includes(creatureId);
+}
+
+// 根据关卡解锁生物
+function unlockCreaturesByStage(stage) {
+    const unlockMap = {
+        1: ['jelly'], // 第一关解锁荧光浮游虫
+        2: ['crab', 'shrimp'], // 第二关解锁晶石蟹和电光虾
+        4: ['ghost'], // 第四关解锁幽灵水母
+        5: ['turtle', 'eel'], // 第五关解锁装甲海龟和雷霆鳗
+        7: ['hunter'], // 第七关解锁深海猎手
+        8: ['leviathan'] // 第八关解锁深渊巨兽
+    };
+    
+    const creaturesToUnlock = unlockMap[stage] || [];
+    creaturesToUnlock.forEach(id => {
+        if (!gameState.unlockedCreatures.includes(id)) {
+            gameState.unlockedCreatures.push(id);
+        }
+    });
+    
+    // 根据关卡解锁更大的格子
+    if (stage >= 9) {
+        gameState.gridSize = 6;
+    } else if (stage >= 6) {
+        gameState.gridSize = 5;
+    } else if (stage >= 3) {
+        gameState.gridSize = 4;
+    }
+    // 重置网格以应用新的大小
+    resetGrid();
+}
+
+// 重置网格以适应新的大小
+function resetGrid() {
+    const newSize = gameState.gridSize;
+    const newCells = [];
+    
+    // 保留现有细胞数据，但调整到新的网格大小
+    for (let i = 0; i < newSize * newSize; i++) {
+        // 只保留在原网格范围内的细胞
+        if (i < gameState.cells.length) {
+            newCells.push(gameState.cells[i]);
+        } else {
+            newCells.push(null);
+        }
+    }
+    
+    gameState.cells = newCells;
+    renderGrid();
+}
 
 // 全局 UI 变量监控器（只负责算：状态是否跨过阈值，不直接操作 DOM）
 const uiVarMonitor = {
@@ -164,11 +220,13 @@ function purchaseRogueItem(itemId) {
     const item = gameState.rogueShopItems.find(it => it.id === itemId);
     if (!item || item.bought) return;
 
+    // 能量不足：提示错误
     if (gameState.energy < baseCost) {
         SoundSystem.playError();
         return;
     }
 
+    // 扣费 + 标记购买
     updateEnergy(-baseCost);
     item.bought = true;
 
@@ -177,8 +235,29 @@ function purchaseRogueItem(itemId) {
     }
 
     SoundSystem.playUpgrade();
-    // 不再需要手动重绘，watcher 会处理按钮状态更新
+
+    // ✅ 立即更新当前这个道具按钮的 UI：变为“已激活 + 灰掉”
+    const btn = document.getElementById(`rogue-item-btn-${item.id}`);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>已激活</span>`;
+        btn.className =
+            "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
+            "transition-all flex items-center justify-center gap-1 shadow-sm " +
+            "border-gray-800 text-gray-600 bg-transparent cursor-default";
+    }
+
+    // 如果你在 renderRogueItems 外层有 wrapper，也可以顺便灰掉：
+    const wrapper = document.getElementById(`rogue-item-wrapper-${item.id}`);
+    if (wrapper) {
+        wrapper.classList.add('opacity-50', 'grayscale', 'scale-95');
+        wrapper.classList.remove('hover:scale-[1.02]');
+    }
+
+    // 之后这个 item 的 watcher 会因为 item.bought === true，
+    // 在下一次 uiVarMonitor.tick() 时自动走到“已购买”那条分支，不再尝试点亮它。
 }
+
 
 function tryCompleteStage(payInstead) {
     const conf = getStageConfig(gameState.currentStage);
