@@ -295,72 +295,40 @@ function purchaseRogueItem(itemId) {
     const stageConf = getStageConfig(gameState.currentStage);
     const baseCost = Math.round(stageConf.reqRate * 6);
 
-    // 1) 道具栏已满：点击按钮无反应，不扣能量，不改按钮样式
+    // 道具栏已满：点击无反应
     if (gameState.rogueItemBar.length >= MAX_ROGUE_ITEM_BAR) {
-        // 这里可以按需加个音效或 console 提示，但不要动按钮状态
-        // playErrorSound && playErrorSound();
-        console.log('[rogue] item bar is full, cannot purchase more');
         return;
     }
 
-    // 2) 在当前商店列表中找到该 item
     const shopItem = gameState.rogueShopItems.find(it => it.id === itemId);
-    if (!shopItem) {
-        console.warn('[rogue] item not found in shop:', itemId);
-        return;
-    }
+    if (!shopItem) return;
+    if (shopItem.bought) return;
 
-    // 已经买过了就不重复买（正常逻辑）
-    if (shopItem.bought) {
-        return;
-    }
-
-    // 3) 能量不足：保持你原来的处理（按钮会通过 watcher 变灰，这里也不动按钮样式）
     if (gameState.energy < baseCost) {
-        // 这里也可以播放一个错误音效或 shake 提示
-        SoundSystem.playError();
-        console.log('[rogue] not enough energy to buy', itemId);
+        // 能量不够也直接 return，不动 UI（按钮样式由 watcher 控制）
         return;
     }
 
-    // 4) 真正购买：扣能量、标记已购买、应用效果、推入道具栏
+    // ✅ 真正购买
     updateEnergy(-baseCost);
     shopItem.bought = true;
 
-    // 道具栏：用 id 记录就够了（不重复加入）
+    // 放进道具栏（避免重复）
     if (!gameState.rogueItemBar.includes(itemId)) {
         gameState.rogueItemBar.push(itemId);
-        // 如果你以后想要"从道具栏移除"，也是操作这个数组
     }
 
-    // 应用对应的 mutation / buff（如果你之前就有类似逻辑，这里照用原来的）
+    // 应用效果
     if (shopItem.mutationId) {
         gameState.activeMutations.add(shopItem.mutationId);
     }
 
-    SoundSystem.playUpgrade();
-
-    // ✅ 立即更新当前这个道具按钮的 UI：变为“已激活 + 灰掉”
-    const btn = document.getElementById(`rogue-item-btn-${shopItem.id}`);
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<span>已激活</span>`;
-        btn.className =
-            "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
-            "transition-all flex items-center justify-center gap-1 shadow-sm " +
-            "border-gray-800 text-gray-600 bg-transparent cursor-default";
-    }
-
-    // 如果你在 renderRogueItems 外层有 wrapper，也可以顺便灰掉：
-    const wrapper = document.getElementById(`rogue-item-wrapper-${shopItem.id}`);
-    if (wrapper) {
-        wrapper.classList.add('opacity-50', 'grayscale', 'scale-95');
-        wrapper.classList.remove('hover:scale-[1.02]');
-    }
-
-    // 之后这个 item 的 watcher 会因为 item.bought === true，
-    // 在下一次 uiVarMonitor.tick() 时自动走到“已购买”那条分支，不再尝试点亮它。
+    // ✅ 立即刷新商店列表（按钮变“已激活”）
+    renderRogueItems();
+    // ✅ 立即刷新道具栏（立刻看到新图标）
+    renderRogueItemBar();
 }
+
 
 
 function tryCompleteStage(payInstead) {
@@ -629,11 +597,12 @@ function gameLoop() {
     gameState.lastRatePerSec = totalRate;
     updateStagePanelDynamic();
     
-    if (gameState.selectedCellIndex !== -1) { 
-        renderDetailPanel(gameState.selectedCellIndex, false); 
+    // ✅ 每帧只轻量刷新“当前选中格子”的详情数值，不重画整块面板
+    const sel = gameState.selectedCellIndex;
+    if (sel !== -1) {
+        updateDetailPanelDynamic(sel);
     }
 
-    // ✅ 驱动所有 UI watcher（关卡按钮 + 肉鸽按钮）
     uiVarMonitor.tick();
 }
 
@@ -659,26 +628,35 @@ function handleProduction(idx, cell, def) {
 function produceEnergy(idx, amount) {
     updateEnergy(amount);
 
-    const cellEl = document.getElementById(`cell-visual-${idx}`);
-    if (cellEl) {
-        const floatCont = cellEl.parentElement.querySelector('.float-container');
-        if (floatCont) {
-            const float = document.createElement('div');
-            float.className = 'text-xs text-accent-energy font-mono animate-fade-up';
-            float.innerText = `+${Math.floor(amount)}`;
-            floatCont.appendChild(float);
-            setTimeout(() => float.remove(), 800);
-        }
+    const cellContainer = document.getElementById(`cell-container-${idx}`);
+    if (cellContainer) {
+        const rect = cellContainer.getBoundingClientRect();
+
+        // 外层：负责定位 & 水平居中
+        const wrapper = document.createElement('div');
+        wrapper.className = 'fixed pointer-events-none z-20';
+        
+        const centerX = rect.left + rect.width / 2;
+        const offsetY = -4; // 贴着上边缘稍微往上点
+        wrapper.style.left = `${centerX}px`;
+        wrapper.style.top = `${rect.top + offsetY}px`;
+        wrapper.style.transform = 'translateX(-50%)';
+
+        // 内层：负责内容 + 动画
+        const float = document.createElement('div');
+        float.className = 'flex items-center justify-center gap-1 text-xl font-black animate-float-up';
+        float.innerHTML = `<i data-lucide="zap" class="w-4 h-4 fill-current"></i> ${Math.floor(amount)}`;
+        float.style.color = '#fff';
+
+        wrapper.appendChild(float);
+        document.body.appendChild(wrapper);
+        lucide.createIcons({ root: wrapper });
+
+        setTimeout(() => wrapper.remove(), 1500);
     }
 
-    // 如果当前有选中格子，并且格子里还存在生物，就刷新右侧详情面板
-    if (
-        gameState.selectedCellIndex !== -1 &&
-        gameState.cells[gameState.selectedCellIndex]
-    ) {
-        renderDetailPanel(gameState.selectedCellIndex, false);
-    }
 }
+
 
 
 // 生物操作

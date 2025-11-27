@@ -341,40 +341,82 @@ function renderDetailPanel(index, animate = true) {
         }
         lucide.createIcons();
     }
-
- 
-    
     if (cell) {
-        const def = getCreatureDef(cell.creatureId);
-        const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
-        const currentOutput = Math.floor((def.baseOutput + buffValue) * (1 + (cell.level - 1) * 0.2));
-        
-        const effEl = document.getElementById('panel-efficiency');
-        if(effEl) effEl.innerText = `${currentOutput} / ${def.interval / 1000}s`;
+        updateDetailPanelDynamic(index);
+    }
+ 
+}
+// 只更新右侧详情面板里“会变的那部分”（效率、等级、状态）
+// 不重画整个 HTML
+function updateDetailPanelDynamic(index) {
+    const cell = gameState.cells[index];
+    if (!cell) return;
 
-        const lvlEl = document.getElementById('panel-level-text');
-        if(lvlEl) {
-            const isMax = cell.level >= def.maxLevel;
-            lvlEl.innerText = `LV.${cell.level} / ${def.maxLevel}`;
-            lvlEl.className = isMax ? 'text-accent-gold' : 'text-gray-400';
+    const def = getCreatureDef(cell.creatureId);
+    const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
+    const currentOutput = Math.floor(
+        (def.baseOutput + buffValue) * (1 + (cell.level - 1) * 0.2)
+    );
+
+    // 当前产出
+    const effEl = document.getElementById('panel-efficiency');
+    if (effEl) {
+        effEl.innerText = `${currentOutput} / ${def.interval / 1000}s`;
+    }
+
+    // 等级文本
+    const lvlEl = document.getElementById('panel-level-text');
+    if (lvlEl) {
+        const isMax = cell.level >= def.maxLevel;
+        lvlEl.innerText = `LV.${cell.level} / ${def.maxLevel}`;
+        lvlEl.className = isMax ? 'text-accent-gold' : 'text-gray-400';
+    }
+
+    // 各种 buff / debuff 状态
+    const statusEl = document.getElementById('panel-status-text');
+    if (statusEl) {
+        let statusHtml = '';
+
+        if (cell.buffs > 0) {
+            statusHtml += `<div class="flex items-center gap-1 text-green-400 text-xs mt-1">
+                <i data-lucide="leaf" class="w-3 h-3"></i> 食物充沛 (+${Math.round(cell.buffs * 100)}%)
+            </div>`;
+        }
+        if (cell.symbiosis > 0) {
+            statusHtml += `<div class="flex items-center gap-1 text-emerald-400 text-xs mt-1">
+                <i data-lucide="sparkles" class="w-3 h-3"></i> 环境共生 (+${Math.round(cell.symbiosis * 100)}%)
+            </div>`;
+        }
+        if (cell.competition < 0) {
+            statusHtml += `<div class="flex items-center gap-1 text-amber-400 text-xs mt-1">
+                <i data-lucide="shield-alert" class="w-3 h-3"></i> 资源竞争 (${Math.round(cell.competition * 100)}%)
+            </div>`;
+        }
+        if (cell.debuffs > 0) {
+            statusHtml += `<div class="flex items-center gap-1 text-red-400 text-xs mt-1">
+                <i data-lucide="flame" class="w-3 h-3"></i> 受到捕食 (-${Math.round(cell.debuffs * 100)}%)
+            </div>`;
+        }
+        if (cell.mutationBuffs > 0) {
+            statusHtml += `<div class="flex items-center gap-1 text-violet-400 text-xs mt-1">
+                <i data-lucide="dna" class="w-3 h-3"></i> 突变加成 (+${Math.round(cell.mutationBuffs * 100)}%)
+            </div>`;
+        }
+        if (cell.speedMultiplier <= 0) {
+            statusHtml = `<div class="flex items-center gap-1 text-red-500 text-xs mt-1">
+                <i data-lucide="skull" class="w-3 h-3"></i> 极度饥饿/被捕食殆尽
+            </div>`;
         }
 
-        const statusEl = document.getElementById('panel-status-text');
-        if(statusEl) {
-            let statusHtml = '';
-            if (cell.buffs > 0) statusHtml += `<div class="flex items-center gap-1 text-green-400 text-xs mt-1"><i data-lucide="chevrons-up" class="w-3 h-3"></i> 食物充沛 (+${Math.round(cell.buffs * 100)}%)</div>`;
-            if (cell.symbiosis > 0) statusHtml += `<div class="flex items-center gap-1 text-cyan-400 text-xs mt-1"><i data-lucide="heart-handshake" class="w-3 h-3"></i> 环境共生 (+${Math.round(cell.symbiosis * 100)}%)</div>`;
-            if (cell.competition < 0) statusHtml += `<div class="flex items-center gap-1 text-purple-400 text-xs mt-1"><i data-lucide="users" class="w-3 h-3"></i> 资源竞争 (${Math.round(cell.competition * 100)}%)</div>`;
-            if (cell.debuffs > 0) statusHtml += `<div class="flex items-center gap-1 text-yellow-500 text-xs mt-1"><i data-lucide="chevrons-down" class="w-3 h-3"></i> 受到捕食 (-${Math.round(cell.debuffs * 100)}%)</div>`;
-            if (cell.mutationBuffs > 0) statusHtml += `<div class="flex items-center gap-1 text-purple-300 text-xs mt-1"><i data-lucide="sparkles" class="w-3 h-3"></i> 突变加成 (+${Math.round(cell.mutationBuffs * 100)}%)</div>`;
-            if (cell.speedMultiplier <= 0) statusHtml = `<div class="flex items-center gap-1 text-red-500 text-xs mt-1"><i data-lucide="skull" class="w-3 h-3"></i> 极度饥饿/被捕食殆尽</div>`;
-            
-            if (statusHtml === '') statusHtml = `<div class="flex items-center gap-1 text-gray-500 text-xs mt-1">生态平衡</div>`;
-            
-            if (statusEl.innerHTML !== statusHtml) {
-                statusEl.innerHTML = statusHtml;
-                lucide.createIcons({root: statusEl});
-            }
+        if (statusHtml === '') {
+            statusHtml = `<div class="flex items-center gap-1 text-gray-500 text-xs mt-1">
+                生态平衡
+            </div>`;
+        }
+
+        if (statusEl.innerHTML !== statusHtml) {
+            statusEl.innerHTML = statusHtml;
+            lucide.createIcons({ root: statusEl });
         }
     }
 }
@@ -480,7 +522,10 @@ function renderRogueItemBar() {
         if (!def) return;
 
         html += `
-            <div class="relative group">
+            <div 
+                class="relative group cursor-pointer"
+                onclick="showRogueItemDetail('${itemId}')"
+            >
                 <div class="w-10 h-10 rounded-lg ${def.bgColor || 'bg-gray-700'} flex items-center justify-center border border-white/10 shadow-md">
                     <i data-lucide="${def.icon || 'sparkles'}" class="w-5 h-5 text-white"></i>
                 </div>
@@ -499,6 +544,61 @@ function renderRogueItemBar() {
 
     // 创建 lucide 图标
     lucide.createIcons({ root: cont });
+}
+
+// 道具栏：点击某个道具时，在右侧详情面板显示其效果
+function showRogueItemDetail(itemId) {
+    const itemDef = getRogueItemDef(itemId);
+    if (!itemDef) return;
+
+    // 如果你有 lastPanelMode / lastRenderedIndex 之类的状态，可以顺手更新一下
+    if (typeof lastPanelMode !== 'undefined') {
+        lastPanelMode = 'rogue';
+    }
+    if (typeof lastRenderedIndex !== 'undefined') {
+        lastRenderedIndex = -1;
+    }
+
+    const animClass = 'animate-fade-in';
+    const rarity = itemDef.rarity || '普通';
+
+    // 简单用颜色：icon 颜色 / 背景颜色来自配置
+    const bgClass = itemDef.bgColor || 'bg-gray-800';
+    const iconColor = itemDef.color || 'text-white';
+
+    detailPanel.innerHTML = `
+        <div class="bg-primary-dark border border-ui-border rounded-xl p-5 ${animClass}">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-xl ${bgClass} flex items-center justify-center shadow-lg border border-white/10">
+                    <i data-lucide="${itemDef.icon || 'sparkles'}" class="w-7 h-7 text-white"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="text-lg text-white truncate">${itemDef.name}</h3>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full border border-white/10 text-amber-300 whitespace-nowrap">
+                            ${rarity}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        深海试炼增益道具
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-3 text-sm text-gray-300 bg-secondary-dark/40 p-4 rounded-lg leading-relaxed">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-accent-life mt-0.5"></i>
+                    <p>${itemDef.desc}</p>
+                </div>
+            </div>
+
+            <div class="mt-4 text-[11px] text-gray-500">
+                已购买的道具会持续生效，无需额外操作。
+            </div>
+        </div>
+    `;
+
+    lucide.createIcons({ root: detailPanel });
 }
 
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
@@ -624,6 +724,31 @@ function renderStagePanel() {
     const ratio = Math.max(0, Math.min(1, rate / conf.reqRate));
     const payCost = conf.payCost;
 
+    const nextStage = gameState.currentStage + 1;
+    const nextUnlock = STAGE_UNLOCKS[nextStage];
+    let unlockBadgeHtml = '';
+
+    if (nextUnlock) {
+        const hints = [];
+        if (nextUnlock.creatureIds && nextUnlock.creatureIds.length) {
+            hints.push('解锁新物种');
+        }
+        if (nextUnlock.gridSize) {
+            hints.push('拓展网格');
+        }
+        const label = hints.join(' · ') || '新内容解锁';
+
+        // 🔴 纯文字角标：轻微倾斜 + 文字自己呼吸放缩
+        unlockBadgeHtml = `
+            <div class="absolute -top-1 -right-1 pointer-events-none select-none">
+                <span class="inline-block rotate-12">
+                    <span class="unlock-badge-text inline-block">
+                        ${label}
+                    </span>
+                </span>
+            </div>
+        `;
+    } 
     panel.innerHTML = ` 
         <div class="rounded-xl border border-ui-border bg-primary-dark/70 p-3 space-y-3 backdrop-blur-sm"> 
             <div class="flex gap-2 items-stretch"> 
@@ -656,11 +781,14 @@ function renderStagePanel() {
                 <!-- FREE CLEAR 按钮：静态结构 + id -->
                 <button 
                     id="stage-free-btn"
-                    class="w-20 rounded-lg shadow-md transition-all duration-200 flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
-                           bg-gray-700 text-gray-500 cursor-not-allowed opacity-50"
+                    class="relative w-20 rounded-lg shadow-md transition-all duration-200
+                        flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
+                        bg-gray-700 text-gray-500 cursor-not-allowed opacity-50"
                 > 
                     <span class="font-extrabold text-sm leading-none">达成</span> 
                     <i data-lucide="circle-arrow-right" class="w-5 h-5 stroke-[2.5]"></i> 
+
+                    ${unlockBadgeHtml}
                 </button> 
             </div> 
 
@@ -693,7 +821,7 @@ function setupStageUiWatchers() {
             if (reached) {
                 // 达标：高亮、可点击
                 btn.className = `
-                    w-20 rounded-lg shadow-md transition-all duration-200
+                    relative w-20 rounded-lg shadow-md transition-all duration-200
                     flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
                     bg-accent-gold text-slate-900 hover:bg-[#fcd34d]
                     hover:scale-[1.02] active:scale-[0.96] cursor-pointer shadow-orange-500/20
@@ -702,7 +830,7 @@ function setupStageUiWatchers() {
             } else {
                 // 未达标：灰掉、禁用
                 btn.className = `
-                    w-20 rounded-lg shadow-md transition-all duration-200
+                    relative w-20 rounded-lg shadow-md transition-all duration-200
                     flex flex-col items-center justify-center shrink-0 gap-1.5 px-2 py-2
                     bg-gray-700 text-gray-500 cursor-not-allowed opacity-50
                 `.replace(/\s+/g, ' ');
@@ -761,3 +889,4 @@ function updateStagePanelDynamic() {
         bar.style.width = `${ratio * 100}%`;
     }
 }
+
