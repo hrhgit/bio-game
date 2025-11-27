@@ -1,0 +1,135 @@
+/* 自定义滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+@media (max-width: 1024px) {
+    .mobile-hide { display: none; }
+}
+
+/* 网格样式 */
+#grid-container {
+    display: grid;
+    gap: 48px;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 1 / 1;
+    transition: all 0.5s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.selected-cell {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.6) !important;
+    transform: scale(1.05);
+    z-index: 30 !important;
+}
+
+.max-level-border {
+    border-color: #fbbf24 !important;
+    animation: glowPulse 2s infinite;
+    z-index: 10;
+}
+
+.dying-state {
+    border-color: #ef4444 !important;
+    animation: dangerPulse 1.5s infinite !important;
+    z-index: 25;
+}
+
+.dying-overlay {
+    background: radial-gradient(circle, transparent 50%, rgba(239, 68, 68, 0.4) 100%);
+    animation: pulse 1s infinite;
+}
+
+.upgrade-item-disabled {
+    opacity: 0.5;
+    filter: grayscale(1);
+    cursor: not-allowed;
+}
+
+.upgrade-item-purchased {
+    border-color: #fbbf24;
+    background-color: rgba(251, 191, 36, 0.1);
+    opacity: 0.8;
+}
+
+#encyclopedia-modal {
+    background-color: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+}
+
+.food-chain-arrow {
+    stroke: #64748b;
+    stroke-width: 2;
+    fill: none;
+    marker-end: url(#arrowhead);
+    animation: dash 20s linear infinite;
+    stroke-dasharray: 5, 5;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -100;
+    }
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); color: inherit; }
+    20% { transform: translateX(-4px); color: #ef4444; }
+    40% { transform: translateX(4px); color: #ef4444; }
+    60% { transform: translateX(-4px); color: #ef4444; }
+    80% { transform: translateX(4px); color: #ef4444; }
+}
+
+.animate-error-shake {
+    animation: errorShake 0.4s ease-in-out;
+    color: #ef4444 !important; 
+}
+
+.animate-error-shake * {
+    color: #ef4444 !important; 
+    border-color: #ef4444 !important;
+}
+
+.neon-border {
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3), inset 0 0 10px rgba(56, 189, 248, 0.1);
+}
+
+.btn-3d-blue {
+    box-shadow: 0 4px 0 #0f172a;
+    transition: all 0.1s;
+}
+
+.btn-3d-blue:active {
+    box-shadow: 0 0 0 #0f172a;
+    transform: translateY(4px);
+}
+
+.btn-3d-gray {
+    box-shadow: 0 4px 0 #111827;
+    transition: all 0.1s;
+}
+
+.btn-3d-gray:active {
+    box-shadow: 0 0 0 #111827;
+    transform: translateY(4px);
+}
+
+@keyframes shakeOnce {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.shake-once {
+    animation: shakeOnce 0.5s cubic-bezier(.36,.07,.19,.97);
+}

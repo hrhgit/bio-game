@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/styles.css">
     
     <script>
         tailwind.config = {
@@ -66,86 +67,6 @@
             }
         }
     </script>
-    <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        @media (max-width: 1024px) {
-            .mobile-hide { display: none; }
-        }
-
-        #grid-container {
-            display: grid;
-            gap: 12px;
-            width: 100%;
-            max-width: 600px;
-            aspect-ratio: 1 / 1;
-            transition: all 0.5s ease;
-        }
-
-        .selected-cell {
-            border-color: #38bdf8 !important;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.6) !important;
-            transform: scale(1.05);
-            z-index: 30 !important;
-        }
-
-        .max-level-border {
-            border-color: #fbbf24 !important;
-            animation: glowPulse 2s infinite;
-            z-index: 10;
-        }
-
-        .dying-state {
-            border-color: #ef4444 !important;
-            animation: dangerPulse 1.5s infinite !important;
-            z-index: 25;
-        }
-        
-        .dying-overlay {
-            background: radial-gradient(circle, transparent 50%, rgba(239, 68, 68, 0.4) 100%);
-            animation: pulse 1s infinite;
-        }
-        
-        .upgrade-item-disabled {
-            opacity: 0.5;
-            filter: grayscale(1);
-            cursor: not-allowed;
-        }
-        .upgrade-item-purchased {
-            border-color: #fbbf24;
-            background-color: rgba(251, 191, 36, 0.1);
-            opacity: 0.8;
-        }
-        
-        /* 百科模态框样式 */
-        #encyclopedia-modal {
-            background-color: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(8px);
-        }
-        
-        .food-chain-arrow {
-            stroke: #64748b;
-            stroke-width: 2;
-            fill: none;
-            marker-end: url(#arrowhead);
-            animation: dash 20s linear infinite;
-            stroke-dasharray: 5, 5;
-        }
-        
-        @keyframes dash {
-            to {
-                stroke-dashoffset: -100;
-            }
-        }
-    </style>
 </head>
 <body class="bg-primary-dark text-gray-200 font-sans h-screen overflow-hidden flex flex-col selection:bg-accent-energy selection:text-primary-dark">
 
@@ -166,12 +87,21 @@
             <div class="flex items-center gap-6 bg-primary-dark/80 px-6 py-2 rounded-full border border-ui-border shadow-inner">
                 <div class="flex items-center gap-2">
                     <i data-lucide="zap" class="w-5 h-5 text-accent-energy fill-current"></i>
-                    <span id="header-energy" class="text-2xl font-bold text-white tracking-widest">0</span>
+                    <span id="header-energy" class="text-2xl text-white tracking-widest">0</span>
                 </div>
+                
                 <div class="h-6 w-px bg-ui-border"></div>
+                
                 <div class="flex items-center gap-2 text-sm">
                     <span class="text-gray-400">效率:</span>
-                    <span id="header-rate" class="text-accent-life font-bold">+0/s</span>
+                    <span id="header-rate" class="text-accent-life">+0/s</span>
+                </div>
+
+                <div class="h-6 w-px bg-ui-border"></div>
+
+                <div class="flex items-center gap-2 text-sm">
+                    <i data-lucide="calendar-clock" class="w-5 h-5 text-purple-400"></i>
+                    <span id="header-day" class="text-xl text-white tracking-widest">Day 1</span>
                 </div>
             </div>
         </div>
@@ -204,26 +134,37 @@
 
         <div class="w-full lg:w-1/4 max-w-xs bg-secondary-dark/90 backdrop-blur-md p-4 flex flex-col border-r border-ui-border z-10 mobile-hide shadow-2xl">
             <h2 class="text-lg text-accent-gold border-b border-ui-border pb-2 flex items-center gap-2 mb-3">
-                <i data-lucide="arrow-up-circle" class="w-5 h-5"></i> 领地扩张
+                <i data-lucide="swords" class="w-5 h-5"></i> 深海试炼
             </h2>
-            <div id="upgrades-container" class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3">
-                </div>
-            <div class="mt-3 pt-3 border-t border-ui-border">
+
+            <!-- 当前关卡信息 -->
+            <div id="stage-panel" class="mb-4 space-y-3">
+                <!-- 由 JS 动态渲染 -->
+            </div>
+
+            <!-- 肉鸽道具商店 -->
+            <div class="mt-2 pt-3 border-t border-ui-border flex-1 flex flex-col min-h-0">
                 <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span><i data-lucide="sprout" class="w-3 h-3 inline mr-1"></i>物种统计</span>
+                    <span>
+                        <i data-lucide="package-open" class="w-3 h-3 inline mr-1"></i>
+                        本关随机增益
+                    </span>
                 </div>
-                <div id="stats-container" class="grid grid-cols-2 gap-2 text-xs">
-                    </div>
+                <div id="rogue-items-container" class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3">
+                    <!-- 由 JS 动态渲染 -->
+                </div>
             </div>
         </div>
 
         <div class="flex-1 flex flex-col items-center justify-center relative z-0 p-4">
-            <div id="grid-container" class="transition-all duration-500">
-                </div>
-            <div id="status-bar" class="absolute bottom-8 bg-secondary-dark/90 backdrop-blur px-8 py-3 rounded-full border border-ui-border text-gray-300 shadow-2xl z-20 flex items-center gap-3 transition-all transform translate-y-20 opacity-0">
-                <i data-lucide="map-pin" class="w-4 h-4 text-accent-energy"></i>
-                <span id="status-text">请选择一个区域进行观察</span>
+            
+            <div class="relative w-full max-w-[640px] aspect-square">
+                
+                <div id="grid-container" class="absolute inset-0 z-10">
+                    </div>
+
             </div>
+
         </div>
 
         <div class="w-full lg:w-1/4 max-w-md bg-secondary-dark/90 backdrop-blur-md flex flex-col border-l border-ui-border z-10 shadow-2xl">
@@ -249,7 +190,7 @@
                         <i data-lucide="book-open" class="w-6 h-6 text-accent-energy"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold text-white tracking-wide">生态百科全书</h2>
+                        <h2 class="text-2xl text-white tracking-wide">生态百科全书</h2>
                         <p class="text-sm text-gray-400">食物链关系网络图谱</p>
                     </div>
                 </div>
@@ -260,7 +201,6 @@
 
             <div class="flex-1 overflow-y-auto bg-[#0b1221] relative custom-scrollbar" id="wiki-scroll-container">
                 <div class="relative min-h-full w-full py-16 flex flex-col items-center" id="wiki-content-wrapper">
-                    
                     <svg id="connection-lines" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-visible">
                         <defs>
                             <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -275,7 +215,6 @@
                             </filter>
                         </defs>
                     </svg>
-
                     <div class="flex flex-col gap-24 w-full max-w-4xl relative z-10 px-8">
                         <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="5"></div>
                         <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="4"></div>
@@ -283,6 +222,15 @@
                         <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="2"></div>
                         <div class="flex gap-12 justify-center w-full tier-row flex-wrap" data-tier="1"></div>
                     </div>
+                </div>
+            </div>
+            
+            <div id="wiki-detail-overlay" class="absolute inset-0 z-30 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 transition-all duration-300 opacity-0" onclick="closeWikiDetail(event)">
+                <div class="bg-secondary-dark border-2 border-accent-energy rounded-2xl shadow-2xl w-full max-w-2xl max-h-full overflow-y-auto custom-scrollbar p-6 relative transform scale-95 transition-all duration-300" id="wiki-detail-card" onclick="event.stopPropagation()">
+                    <button onclick="closeWikiDetail()" class="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition">
+                        <i data-lucide="x" class="w-6 h-6 text-gray-400 hover:text-white"></i>
+                    </button>
+                    <div id="wiki-detail-content"></div>
                 </div>
             </div>
             
@@ -310,46 +258,46 @@
                         <i data-lucide="dna" class="w-10 h-10 text-accent-energy"></i>
                     </div>
                 </div>
-                <h2 class="text-3xl font-bold text-white tracking-wider">欢迎来到 <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">生态进化论</span></h2>
+                <h2 class="text-3xl text-white tracking-wider">欢迎来到 <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">生态进化论</span></h2>
                 <p class="text-gray-400 mt-2 text-sm">构建完美的深海生态闭环</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 relative z-10">
-                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start hover:border-accent-energy transition-colors">
                     <div class="mt-1 p-2 bg-blue-500/20 rounded text-blue-400"><i data-lucide="mouse-pointer-2" class="w-5 h-5"></i></div>
                     <div>
-                        <h3 class="text-blue-400 font-bold mb-1">点击放置</h3>
-                        <p class="text-xs text-gray-400">消耗能量在网格中放置物种。从最基础的<span class="text-green-400">生产者</span>（如蓝藻）开始。</p>
+                        <h3 class="text-blue-400 mb-1">基础生存</h3>
+                        <p class="text-xs text-gray-400">捕食者必须放在猎物的<span class="text-white ">上下左右</span>相邻格子。如果没有食物，生物会<span class="text-red-400">饥饿死亡</span>。</p>
                     </div>
                 </div>
 
-                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
-                    <div class="mt-1 p-2 bg-orange-500/20 rounded text-orange-400"><i data-lucide="link" class="w-5 h-5"></i></div>
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start hover:border-green-400 transition-colors">
+                    <div class="mt-1 p-2 bg-green-500/20 rounded text-green-400"><i data-lucide="utensils" class="w-5 h-5"></i></div>
                     <div>
-                        <h3 class="text-orange-400 font-bold mb-1">邻接生存</h3>
-                        <p class="text-xs text-gray-400">捕食者必须放在猎物的<span class="text-white font-bold">上下左右</span>相邻格子才能生存，否则会饥饿死亡。</p>
+                        <h3 class="text-green-400 mb-1">供需平衡</h3>
+                        <p class="text-xs text-gray-400">只有当 <span class="text-white">食物供应 > 捕食者需求</span> 时，多出的部分才会转化为<span class="text-green-400">富余加速Buff</span>。</p>
                     </div>
                 </div>
 
-                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start hover:border-cyan-400 transition-colors">
                     <div class="mt-1 p-2 bg-cyan-500/20 rounded text-cyan-400"><i data-lucide="heart-handshake" class="w-5 h-5"></i></div>
                     <div>
-                        <h3 class="text-cyan-400 font-bold mb-1">共生关系</h3>
-                        <p class="text-xs text-gray-400">特定的物种组合（如虾和蟹）相邻时会产生<span class="text-cyan-400">共生Buff</span>，大幅提高产量。</p>
+                        <h3 class="text-cyan-400 mb-1">环境效应</h3>
+                        <p class="text-xs text-gray-400">特定组合（如虾+蟹）产生<span class="text-cyan-400">共生Buff</span>；同类过于密集会产生<span class="text-purple-400">竞争Debuff</span>。</p>
                     </div>
                 </div>
 
-                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start">
-                    <div class="mt-1 p-2 bg-purple-500/20 rounded text-purple-400"><i data-lucide="users" class="w-5 h-5"></i></div>
+                <div class="bg-primary-dark/50 p-4 rounded-xl border border-ui-border flex gap-3 items-start hover:border-purple-400 transition-colors">
+                    <div class="mt-1 p-2 bg-purple-500/20 rounded text-purple-400"><i data-lucide="book-open" class="w-5 h-5"></i></div>
                     <div>
-                        <h3 class="text-purple-400 font-bold mb-1">避免竞争</h3>
-                        <p class="text-xs text-gray-400">同种生物过于密集会产生<span class="text-purple-400">资源竞争Debuff</span>，请合理规划布局。</p>
+                        <h3 class="text-purple-400 mb-1">查阅图鉴</h3>
+                        <p class="text-xs text-gray-400">关系网极其复杂！请务必点击顶部的<span class="text-white">生物百科</span>，查看<span class="text-gray-300">实线(必吃)</span>与<span class="text-gray-500">虚线(选吃)</span>的区别。</p>
                     </div>
                 </div>
             </div>
 
             <div class="flex justify-center relative z-10">
-                <button onclick="startGame()" class="group relative px-8 py-3 bg-accent-energy text-primary-dark font-bold rounded-full hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(56,189,248,0.5)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] overflow-hidden">
+                <button onclick="startGame()" class="group relative px-8 py-3 bg-accent-energy text-primary-dark rounded-full hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(56,189,248,0.5)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] overflow-hidden">
                     <span class="relative z-10 flex items-center gap-2">
                         开始演化 <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
                     </span>
@@ -358,193 +306,31 @@
         </div>
     </div>
 
+    <!-- 引入JavaScript文件 -->
+    <script src="js/config.js"></script>
+    <script src="js/sound-system.js"></script>
+    <script src="js/game-core.js"></script>
+    <script src="js/ui-renderer.js"></script>
+    <script src="js/encyclopedia.js"></script>
+    
     <script>
-        // --- 音效系统 ---
-        const SoundSystem = {
-            ctx: null, muted: false, masterGain: null,
-            init: function() {
-                if (this.ctx) return;
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                this.ctx = new AudioContext();
-                this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = 0.3; 
-                this.masterGain.connect(this.ctx.destination);
-            },
-            toggle: function() {
-                this.muted = !this.muted;
-                const btn = document.getElementById('sound-btn');
-                if (this.muted) {
-                    btn.innerHTML = '<i data-lucide="volume-x" class="w-5 h-5 text-red-400"></i>';
-                    if (this.masterGain) this.masterGain.gain.value = 0;
-                } else {
-                    btn.innerHTML = '<i data-lucide="volume-2" class="w-5 h-5"></i>';
-                    if (this.masterGain) this.masterGain.gain.value = 0.3;
-                    this.init(); if(this.ctx.state === 'suspended') this.ctx.resume();
-                }
-                lucide.createIcons({root: btn});
-            },
-            playTone: function(freq, type, duration, startTime = 0) {
-                if (this.muted || !this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime + startTime);
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime + startTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + startTime + duration);
-                osc.connect(gain);
-                gain.connect(this.masterGain);
-                osc.start(this.ctx.currentTime + startTime);
-                osc.stop(this.ctx.currentTime + startTime + duration);
-            },
-            playPlace: function() { this.init(); this.playTone(600, 'sine', 0.1); this.playTone(800, 'sine', 0.1, 0.05); },
-            playRemove: function() { this.init(); this.playTone(150, 'sawtooth', 0.2); },
-            playLevelUp: function() { this.init(); this.playTone(880, 'sine', 0.3, 0); this.playTone(1108, 'sine', 0.3, 0.1); this.playTone(1318, 'sine', 0.5, 0.2); },
-            playUpgrade: function() { 
-                this.init(); 
-                this.playTone(440, 'triangle', 0.2, 0);
-                this.playTone(554, 'triangle', 0.2, 0.1); 
-                this.playTone(659, 'triangle', 0.4, 0.2); 
-            },
-            playError: function() { this.init(); this.playTone(150, 'square', 0.1); this.playTone(100, 'square', 0.1, 0.1); }
-        };
-
-        const CATEGORIES = {
-            'plant': { name: '海草藻类', color: 'text-green-400', icon: 'sprout', badgeColor: 'bg-green-900/50 border-green-800 text-green-300' },
-            'mollusk': { name: '浮游软体', color: 'text-cyan-300', icon: 'ghost', badgeColor: 'bg-cyan-900/50 border-cyan-800 text-cyan-300' },
-            'arthropod': { name: '甲壳节肢', color: 'text-orange-300', icon: 'gem', badgeColor: 'bg-orange-900/50 border-orange-800 text-orange-300' },
-            'fish': { name: '深海鱼类', color: 'text-blue-400', icon: 'fish', badgeColor: 'bg-blue-900/50 border-blue-800 text-blue-300' },
-            'reptile': { name: '两栖爬行', color: 'text-emerald-400', icon: 'shield', badgeColor: 'bg-emerald-900/50 border-emerald-800 text-emerald-300' },
-            'apex': { name: '远古巨兽', color: 'text-red-500', icon: 'skull', badgeColor: 'bg-red-900/50 border-red-800 text-red-300' }
-        };
-
-        // Updated based on final matrix
-        const CREATURES = [
-            { 
-                category: 'plant', id: 'algae', name: '光合蓝藻', tier: 1, maxLevel: 4, 
-                cost: 40, baseOutput: 5, interval: 2500,
-                foodConfig: null, 
-                consumptionImpact: 0, starvationRate: 0, 
-                color: 'text-green-300', baseColor: 'bg-green-950', fillColor: 'bg-green-600', borderColor: 'border-green-800', icon: 'leaf', desc: '基础生产者，吸收光能。',
-                relations: [{ target: 'kelp', type: 'symbiosis', val: 0.1, msg: '藻带共生' }] 
-            },
-            { 
-                category: 'plant', id: 'kelp', name: '紫晶海带', tier: 1, maxLevel: 4, 
-                cost: 60, baseOutput: 10, interval: 4000,
-                foodConfig: null, 
-                consumptionImpact: 0, starvationRate: 0, 
-                color: 'text-fuchsia-300', baseColor: 'bg-fuchsia-950', fillColor: 'bg-fuchsia-600', borderColor: 'border-fuchsia-800', icon: 'sprout', desc: '富含稀有矿物质的植物。',
-                relations: [{ target: 'algae', type: 'symbiosis', val: 0.1, msg: '藻带共生' }]
-            },
-            { 
-                category: 'mollusk', id: 'plankton', name: '荧光浮游虫', tier: 2, maxLevel: 6, 
-                cost: 160, baseOutput: 32, interval: 4000,
-                foodConfig: { mode: 'OR', targets: ['algae'] }, 
-                consumptionImpact: 0.4, starvationRate: -10, 
-                color: 'text-cyan-300', baseColor: 'bg-cyan-950', fillColor: 'bg-cyan-600', borderColor: 'border-cyan-800', icon: 'bug', desc: '以蓝藻为食。',
-                relations: [{ target: 'plankton', type: 'competition', val: -0.1, msg: '种群过密' }]
-            },
-            { 
-                category: 'arthropod', id: 'crab', name: '晶石蟹', tier: 2, maxLevel: 5, 
-                cost: 200, baseOutput: 50, interval: 5000,
-                foodConfig: { mode: 'OR', targets: ['kelp'] }, 
-                consumptionImpact: 0.4, starvationRate: -10, 
-                color: 'text-pink-300', baseColor: 'bg-pink-950', fillColor: 'bg-pink-600', borderColor: 'border-pink-800', icon: 'gem', desc: '坚硬的甲壳，喜爱海带。',
-                relations: [{ target: 'shrimp', type: 'symbiosis', val: 0.25, msg: '虾蟹互利' }]
-            },
-            { 
-                category: 'arthropod', id: 'shrimp', name: '电光虾', tier: 2, maxLevel: 8, 
-                cost: 200, baseOutput: 24, interval: 3000,
-                foodConfig: { mode: 'OR', targets: ['algae', 'kelp'] }, 
-                consumptionImpact: 0.4, starvationRate: -12, 
-                color: 'text-yellow-300', baseColor: 'bg-yellow-950', fillColor: 'bg-yellow-600', borderColor: 'border-yellow-800', icon: 'zap', desc: '适应力强，可食用多种植物。',
-                relations: [{ target: 'crab', type: 'symbiosis', val: 0.25, msg: '虾蟹互利' }]
-            },
-            { 
-                category: 'mollusk', id: 'jellyfish', name: '幽灵水母', tier: 3, maxLevel: 8, 
-                cost: 800, baseOutput: 240, interval: 6000,
-                foodConfig: { mode: 'OR', targets: ['plankton', 'shrimp'] }, 
-                consumptionImpact: 0.6, starvationRate: -15, 
-                color: 'text-indigo-300', baseColor: 'bg-indigo-950', fillColor: 'bg-indigo-600', borderColor: 'border-indigo-800', icon: 'ghost', desc: '漂浮的捕食者。',
-                relations: [
-                    { target: 'jellyfish', type: 'symbiosis', val: 0.1, msg: '水母群聚' },
-                    { target: 'eel', type: 'competition', val: -0.2, msg: '领地冲突' }
-                ]
-            },
-            { 
-                category: 'reptile', id: 'turtle', name: '装甲海龟', tier: 3, maxLevel: 20, 
-                cost: 1200, baseOutput: 300, interval: 8000,
-                foodConfig: { mode: 'OR', targets: ['crab', 'plankton'] }, 
-                consumptionImpact: 0.6, starvationRate: -10, 
-                color: 'text-emerald-300', baseColor: 'bg-emerald-950', fillColor: 'bg-emerald-600', borderColor: 'border-emerald-800', icon: 'shield', desc: '厚重的甲壳，食谱广泛。',
-                relations: []
-            },
-            { 
-                category: 'fish', id: 'eel', name: '雷霆鳗', tier: 3, maxLevel: 12, 
-                cost: 800, baseOutput: 140, interval: 4000,
-                foodConfig: { mode: 'AND', targets: ['shrimp', 'plankton'] }, 
-                consumptionImpact: 0.6, starvationRate: -18, 
-                color: 'text-violet-300', baseColor: 'bg-violet-950', fillColor: 'bg-violet-600', borderColor: 'border-violet-800', icon: 'activity', desc: '敏捷的猎手，需多种食物。',
-                relations: [
-                    { target: 'kelp', type: 'symbiosis', val: 0.3, msg: '伏击环境' },
-                    { target: 'jellyfish', type: 'competition', val: -0.2, msg: '领地冲突' }
-                ]
-            },
-            { 
-                category: 'fish', id: 'hunter', name: '深海猎手', tier: 4, maxLevel: 10, 
-                cost: 2400, baseOutput: 600, interval: 6000,
-                foodConfig: { mode: 'AND', targets: ['jellyfish', 'turtle'] }, 
-                consumptionImpact: 0.8, starvationRate: -20, 
-                color: 'text-orange-300', baseColor: 'bg-orange-950', fillColor: 'bg-orange-600', borderColor: 'border-orange-800', icon: 'crosshair', desc: '凶猛的顶级掠食者，成群狩猎。',
-                relations: [{ target: 'algae', type: 'symbiosis', val: 0.3, msg: '富氧水域' }]
-            },
-            { 
-                category: 'apex', id: 'leviathan', name: '深渊巨兽', tier: 5, maxLevel: 10, 
-                cost: 4800, baseOutput: 1920, interval: 8000,
-                foodConfig: { mode: 'AND', targets: ['hunter', 'eel'] }, 
-                consumptionImpact: 0.9, starvationRate: -30, 
-                color: 'text-red-500', baseColor: 'bg-red-950', fillColor: 'bg-red-700', borderColor: 'border-red-800', icon: 'skull', desc: '深海的霸主，吞噬高阶猎手。',
-                relations: [{ target: 'leviathan', type: 'competition', val: -0.5, msg: '王不见王' }]
-            }
-        ];
-
-        const UPGRADES = [
-            { id: 'grid_expansion_1', name: '空间折叠 I', type: 'grid', value: 4, cost: 500, reqCreature: 'algae', reqCount: 3, desc: '将培养皿扩大至 4x4', icon: 'maximize' },
-            { id: 'grid_expansion_2', name: '空间折叠 II', type: 'grid', value: 5, cost: 2000, reqCreature: 'plankton', reqCount: 2, desc: '将培养皿扩大至 5x5', icon: 'maximize' },
-            { id: 'grid_expansion_3', name: '位面扩张', type: 'grid', value: 6, cost: 10000, reqCreature: 'leviathan', reqCount: 1, desc: '将培养皿扩大至 6x6', icon: 'globe' }
-        ];
-
-        const CONFIG = { initialEnergy: 100, tickRate: 100 };
-
-        let gameState = {
-            energy: CONFIG.initialEnergy,
-            gridSize: 3,
-            isPaused: false,
-            cells: [],
-            selectedCellIndex: -1,
-            purchasedUpgrades: new Set(),
-            activeBuffs: {}
-        };
-
+        // 全局变量
         const gridEl = document.getElementById('grid-container');
         const energyEl = document.getElementById('header-energy');
         const rateEl = document.getElementById('header-rate');
-        const upgradesContainer = document.getElementById('upgrades-container');
-        const statsContainer = document.getElementById('stats-container');
         const detailPanel = document.getElementById('detail-panel-content');
-        const statusBar = document.getElementById('status-bar');
-        const statusText = document.getElementById('status-text');
         const pauseBtn = document.getElementById('pause-btn');
         const modal = document.getElementById('encyclopedia-modal');
-        let wikiTimeout;
         let gameInterval;
 
+        // 初始化游戏
         function init() {
             gameState.cells = Array(gameState.gridSize * gameState.gridSize).fill(null);
             renderGrid();
-            renderUpgrades();
-            
-            // 这里不再直接启动 setInterval
-            setTimeout(() => statusBar.classList.remove('translate-y-20', 'opacity-0'), 500);
+
+            rollRogueShop();
+            renderStagePanel();
+
             lucide.createIcons();
             
             document.addEventListener('click', () => { 
@@ -555,808 +341,27 @@
             buildEncyclopedia();
         }
 
+        // 开始游戏
         function startGame() {
             const tutorialModal = document.getElementById('tutorial-modal');
-            
             SoundSystem.init();
             SoundSystem.playUpgrade(); 
-
             tutorialModal.classList.add('opacity-0', 'pointer-events-none');
-            
             if (!gameInterval) {
                 gameInterval = setInterval(gameLoop, CONFIG.tickRate);
             }
-
-            setTimeout(() => {
-                tutorialModal.style.display = 'none';
-            }, 500);
+            setTimeout(() => { tutorialModal.style.display = 'none'; }, 500);
         }
 
-        function toggleEncyclopedia() {
-            const modalContent = document.getElementById('modal-content');
-            
-            if (wikiTimeout) clearTimeout(wikiTimeout);
-
-            if (modal.classList.contains('hidden')) {
-                if (!gameState.isPaused) document.getElementById('pause-btn').click();
-
-                modal.classList.remove('hidden');
-                void modal.offsetWidth;
-                
-                modal.classList.remove('opacity-0');
-                modalContent.classList.remove('scale-95');
-                
-                buildEncyclopedia();
-                
-                wikiTimeout = setTimeout(() => {
-                    drawConnections();
-                }, 300);
-            } else {
-                modal.classList.add('opacity-0');
-                modalContent.classList.add('scale-95');
-                
-                wikiTimeout = setTimeout(() => {
-                    modal.classList.add('hidden');
-                    if (gameState.isPaused) document.getElementById('pause-btn').click();
-                }, 300);
-            }
-        }
-
-        function buildEncyclopedia() {
-            for (let t = 1; t <= 5; t++) {
-                const row = document.querySelector(`.tier-row[data-tier="${t}"]`);
-                if (!row) continue;
-                row.innerHTML = '';
-                const tierCreatures = CREATURES.filter(c => c.tier === t);
-                tierCreatures.forEach(c => {
-                    const node = document.createElement('div');
-                    node.id = `wiki-node-${c.id}`;
-                    node.className = `flex flex-col items-center p-3 bg-secondary-dark border border-gray-700 rounded-xl shadow-lg w-32 relative z-10`;
-                    node.innerHTML = `
-                        <div class="w-12 h-12 rounded-lg ${c.baseColor} border ${c.borderColor} flex items-center justify-center mb-2">
-                            <i data-lucide="${c.icon}" class="w-6 h-6 ${c.color}"></i>
-                        </div>
-                        <span class="text-xs font-bold text-gray-200 text-center">${c.name}</span>
-                    `;
-                    row.appendChild(node);
-                });
-            }
-            lucide.createIcons();
-        }
-
-        function drawConnections() {
-            const container = document.getElementById('wiki-content-wrapper');
-            const svg = document.getElementById('connection-lines');
-            
-            const oldLines = svg.querySelectorAll('path.connection-line');
-            oldLines.forEach(l => l.remove());
-            
-            const containerRect = container.getBoundingClientRect();
-            
-            svg.setAttribute('height', container.offsetHeight);
-            svg.setAttribute('width', container.offsetWidth);
-
-            function getIconBoxCoords(nodeId) {
-                const node = document.getElementById(nodeId);
-                if (!node) return null;
-                const iconBox = node.querySelector('div'); 
-                const rect = iconBox.getBoundingClientRect();
-                return {
-                    top: rect.top - containerRect.top,
-                    bottom: rect.bottom - containerRect.top,
-                    centerX: (rect.left + rect.width / 2) - containerRect.left,
-                    centerY: (rect.top + rect.height / 2) - containerRect.top
-                };
-            }
-
-            function createPath(d, color, dashArray, width, type) {
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', d);
-                path.setAttribute('class', 'connection-line cursor-pointer transition-all duration-300');
-                path.setAttribute('stroke', color);
-                path.setAttribute('stroke-width', width);
-                path.setAttribute('fill', 'none');
-                
-                if (type === 'food') path.setAttribute('marker-end', 'url(#arrowhead)');
-                if (dashArray) path.setAttribute('stroke-dasharray', dashArray);
-
-                path.addEventListener('mouseenter', () => {
-                    path.setAttribute('stroke-width', parseInt(width) + 2);
-                    path.setAttribute('stroke', type === 'food' ? '#94a3b8' : (type === 'symbiosis' ? '#22d3ee' : '#c084fc'));
-                    path.setAttribute('filter', 'url(#glow-line)');
-                    path.setAttribute('stroke-dasharray', '0'); 
-                    svg.appendChild(path); 
-                });
-                path.addEventListener('mouseleave', () => {
-                    path.setAttribute('stroke-width', width);
-                    path.setAttribute('stroke', color);
-                    path.removeAttribute('filter');
-                    if (dashArray) path.setAttribute('stroke-dasharray', dashArray);
-                });
-
-                svg.appendChild(path);
-            }
-
-            CREATURES.forEach(creature => {
-                const predatorCoords = getIconBoxCoords(`wiki-node-${creature.id}`);
-                if (!predatorCoords) return;
-
-                if (creature.foodConfig) {
-                    const isAndMode = creature.foodConfig.mode === 'AND';
-                    const dashStyle = isAndMode ? '0' : '6, 6'; 
-                    const widthStyle = isAndMode ? '2.5' : '1.5'; 
-
-                    creature.foodConfig.targets.forEach(preyId => {
-                        const preyCoords = getIconBoxCoords(`wiki-node-${preyId}`);
-                        if (!preyCoords) return;
-
-                        const startX = preyCoords.centerX;
-                        const startY = preyCoords.top; 
-                        const endX = predatorCoords.centerX;
-                        const endY = predatorCoords.bottom + 5;
-
-                        const dist = Math.abs(startY - endY);
-                        const curveFactor = dist > 200 ? 0.6 : 0.5; 
-
-                        const d = `M ${startX} ${startY} C ${startX} ${startY - dist * curveFactor}, ${endX} ${endY + dist * curveFactor}, ${endX} ${endY}`;
-
-                        createPath(d, '#475569', dashStyle, widthStyle, 'food');
-                    });
-                }
-
-                if (creature.relations) {
-                    creature.relations.forEach(rel => {
-                        const targetCoords = getIconBoxCoords(`wiki-node-${rel.target}`);
-                        if (!targetCoords) return;
-
-                        const isSelf = (creature.id === rel.target);
-                        let d = '';
-
-                        if (isSelf) {
-                            const startX = predatorCoords.centerX;
-                            const startY = predatorCoords.top;
-                            const r = 25;
-                            d = `M ${startX - 5} ${startY} C ${startX - r} ${startY - r*1.5}, ${startX + r} ${startY - r*1.5}, ${startX + 5} ${startY}`;
-                        } else {
-                            const startX = predatorCoords.centerX;
-                            const startY = predatorCoords.top;
-                            const endX = targetCoords.centerX;
-                            const endY = targetCoords.top;
-
-                            if (Math.abs(startY - endY) < 20) {
-                                const midX = (startX + endX) / 2;
-                                const arcHeight = 80; 
-                                d = `M ${startX} ${startY} Q ${midX} ${startY - arcHeight} ${endX} ${endY}`;
-                            } else {
-                                const dist = Math.abs(startY - endY);
-                                d = `M ${startX} ${startY} C ${startX} ${startY - dist * 0.5}, ${endX} ${endY + dist * 0.5}, ${endX} ${endY}`;
-                            }
-                        }
-
-                        if (rel.type === 'symbiosis') {
-                            createPath(d, '#0891b2', null, '2', 'symbiosis'); 
-                        } else if (rel.type === 'competition') {
-                            createPath(d, '#9333ea', '2, 4', '2', 'competition'); 
-                        }
-                    });
-                }
-            });
-        }
-
-        function gameLoop() {
-            if (gameState.isPaused) return;
-            
-            const impacts = calculateEcologicalImpacts();
-            let totalRate = 0;
-
-            gameState.cells.forEach((cell, idx) => {
-                if (!cell) return;
-                
-                const def = getCreatureDef(cell.creatureId);
-                const impact = impacts[idx];
-                
-                cell.speedMultiplier = impact.speedMultiplier;
-                cell.buffs = impact.buffs;
-                cell.debuffs = impact.debuffs;
-                cell.symbiosis = impact.symbiosis;
-                cell.competition = impact.competition;
-
-                if (impact.isStarving || cell.speedMultiplier <= 0) {
-                    cell.state = 'dying';
-                } else {
-                    cell.state = 'normal';
-                }
-
-                if (cell.speedMultiplier > 0) {
-                    const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
-                    const baseWithBuff = def.baseOutput + buffValue;
-                    const leveledOutput = baseWithBuff * (1 + (cell.level - 1) * 0.2);
-                    totalRate += (leveledOutput * cell.speedMultiplier) / (def.interval / 1000);
-                }
-
-                if (cell.state === 'dying') {
-                    const decayAmount = impact.isStarving ? Math.abs(def.starvationRate) : Math.abs(impact.speedMultiplier * 5);
-                    cell.progress -= decayAmount;
-
-                    if (cell.progress <= 0) {
-                        if (cell.level > 1) { 
-                            cell.level--; 
-                            cell.progress = 100;
-                        } else { 
-                            killCreature(idx); 
-                            return; 
-                        }
-                    }
-                } else {
-                    const baseIncrement = (CONFIG.tickRate / def.interval) * 100;
-                    const actualIncrement = baseIncrement * cell.speedMultiplier;
-                    cell.progress += actualIncrement;
-
-                    if (cell.progress >= 100) {
-                        handleProduction(idx, cell, def);
-                        cell.progress = 0;
-                    }
-                }
-                updateCellVisuals(idx, cell);
-            });
-            
-            rateEl.innerText = `+${totalRate.toFixed(1)}/s`;
-            updateUpgradesState(); 
-            updateStats();
-            
-            if (gameState.selectedCellIndex !== -1 && gameState.cells[gameState.selectedCellIndex]) {
-                 renderDetailPanel(gameState.selectedCellIndex, false);
-            }
-        }
-
-        function handleProduction(idx, cell, def) {
-            const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
-            const baseWithBuff = def.baseOutput + buffValue;
-            const output = Math.floor(baseWithBuff * (1 + (cell.level - 1) * 0.2));
-            produceEnergy(idx, output);
-            if (cell.level < def.maxLevel) {
-                cell.level++;
-                SoundSystem.playLevelUp();
-                const visualEl = document.getElementById(`cell-visual-${idx}`);
-                if (cell.level >= def.maxLevel && visualEl) {
-                    visualEl.classList.remove(def.borderColor);
-                    visualEl.classList.add('max-level-border');
-                }
-            }
-        }
-
-        function calculateEcologicalImpacts() {
-            const impacts = gameState.cells.map(() => ({ 
-                speedMultiplier: 1.0, 
-                isStarving: false, 
-                buffs: 0,
-                debuffs: 0,
-                symbiosis: 0,
-                competition: 0
-            }));
-
-            const predatorCountsOnFood = new Array(gameState.cells.length).fill(0);
-            
-            gameState.cells.forEach((cell, idx) => {
-                if (!cell) return;
-                const def = getCreatureDef(cell.creatureId);
-                if (def.foodConfig) {
-                    const neighbors = getNeighbors(idx);
-                    neighbors.forEach(nIdx => {
-                        const nCell = gameState.cells[nIdx];
-                        if (nCell && def.foodConfig.targets.includes(nCell.creatureId)) {
-                            predatorCountsOnFood[nIdx]++;
-                        }
-                    });
-                }
-            });
-
-            gameState.cells.forEach((cell, idx) => {
-                if (!cell) return;
-                const def = getCreatureDef(cell.creatureId);
-                const neighbors = getNeighbors(idx);
-
-                if (def.relations) {
-                    def.relations.forEach(rel => {
-                        const targetIndices = neighbors.filter(nIdx => {
-                            const nCell = gameState.cells[nIdx];
-                            return nCell && nCell.creatureId === rel.target;
-                        });
-                        if (targetIndices.length > 0) {
-                            const effectValue = targetIndices.length * rel.val;
-                            if (rel.val > 0) impacts[idx].symbiosis += effectValue;
-                            else impacts[idx].competition += effectValue;
-                            impacts[idx].speedMultiplier += effectValue;
-                        }
-                    });
-                }
-
-                if (def.foodConfig) {
-                    const validFoodIndices = neighbors.filter(nIdx => {
-                        const nCell = gameState.cells[nIdx];
-                        return nCell && def.foodConfig.targets.includes(nCell.creatureId);
-                    });
-
-                    let isStarving = false;
-                    if (def.foodConfig.mode === 'AND') {
-                        const eatenTypes = new Set(validFoodIndices.map(i => gameState.cells[i].creatureId));
-                        isStarving = !def.foodConfig.targets.every(t => eatenTypes.has(t));
-                    } else {
-                        isStarving = validFoodIndices.length === 0;
-                    }
-
-                    if (isStarving) {
-                        impacts[idx].isStarving = true;
-                        impacts[idx].speedMultiplier = 0;
-                    } else {
-                        let myFoodShare = 0;
-                        validFoodIndices.forEach(fIdx => {
-                            const eaters = predatorCountsOnFood[fIdx];
-                            myFoodShare += (1 / eaters);
-                        });
-
-                        if (myFoodShare > 1.0) {
-                            const surplus = myFoodShare - 1.0;
-                            const extraBuff = surplus * 0.3; 
-                            impacts[idx].buffs += extraBuff;
-                            impacts[idx].speedMultiplier += extraBuff;
-                        }
-                    }
-
-                    if (validFoodIndices.length > 0) {
-                        const pressurePerFood = def.consumptionImpact / validFoodIndices.length;
-                        validFoodIndices.forEach(fIdx => {
-                            impacts[fIdx].debuffs += pressurePerFood;
-                            impacts[fIdx].speedMultiplier -= pressurePerFood;
-                        });
-                    }
-                }
-            });
-
-            return impacts;
-        }
-
-        function produceEnergy(idx, amount) {
-            gameState.energy += amount;
-            energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
-            const cellEl = document.getElementById(`cell-container-${idx}`);
-            const container = cellEl?.querySelector('.float-container');
-            if (container) {
-                const float = document.createElement('div');
-                float.className = 'absolute top-0 text-center font-bold text-lg pointer-events-none animate-float-up z-50 flex justify-center items-center gap-1';
-                float.innerHTML = `<i data-lucide="zap" class="w-3 h-3 fill-current"></i> ${amount}`;
-                float.style.color = '#fff';
-                float.style.textShadow = '0 0 4px #38bdf8';
-                container.appendChild(float);
-                lucide.createIcons({ root: float });
-                setTimeout(() => float.remove(), 1500);
-            }
-            if (gameState.selectedCellIndex !== -1) {
-                if (!gameState.cells[gameState.selectedCellIndex] || gameState.cells[gameState.selectedCellIndex]) {
-                    renderDetailPanel(gameState.selectedCellIndex, false);
-                }
-            }
-        }
-
-        function renderUpgrades() {
-            upgradesContainer.innerHTML = '';
-            UPGRADES.forEach(u => {
-                const el = document.createElement('div');
-                el.id = `upgrade-${u.id}`;
-                el.className = 'p-3 rounded-lg border border-ui-border bg-primary-dark/50 transition-all duration-200 flex flex-col gap-2 relative overflow-hidden group';
-                const reqName = getCreatureDef(u.reqCreature).name;
-                el.innerHTML = `<div class="flex justify-between items-start z-10"><div class="flex items-center gap-2"><div class="p-1.5 bg-gray-800 rounded text-gray-400 group-hover:text-accent-gold transition-colors"><i data-lucide="${u.icon}" class="w-4 h-4"></i></div><span class="text-sm font-bold text-gray-200">${u.name}</span></div><span id="cost-${u.id}" class="text-xs font-mono text-accent-energy"><i data-lucide="zap" class="w-3 h-3 inline"></i> ${u.cost}</span></div><div class="text-xs text-gray-500 z-10">${u.desc}</div><div class="flex justify-between items-center text-[10px] z-10 mt-1"><span id="req-${u.id}" class="text-gray-500">需 ${u.reqCount} ${reqName}</span><button onclick="purchaseUpgrade('${u.id}')" class="bg-gray-700 hover:bg-accent-gold hover:text-black text-white px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">购买</button></div>`;
-                upgradesContainer.appendChild(el);
-            });
-            lucide.createIcons();
-        }
-
-        function updateUpgradesState() {
-            const counts = {};
-            gameState.cells.forEach(c => { if(c) counts[c.creatureId] = (counts[c.creatureId] || 0) + 1; });
-            UPGRADES.forEach(u => {
-                const el = document.getElementById(`upgrade-${u.id}`);
-                const btn = el.querySelector('button');
-                const reqText = document.getElementById(`req-${u.id}`);
-                if (gameState.purchasedUpgrades.has(u.id)) {
-                    if (!el.classList.contains('upgrade-item-purchased')) {
-                        el.classList.add('upgrade-item-purchased', 'border-accent-gold');
-                        el.classList.remove('bg-primary-dark/50');
-                        btn.innerText = '已激活'; btn.disabled = true;
-                        btn.classList.replace('bg-gray-700', 'bg-accent-gold/20'); btn.classList.add('text-accent-gold');
-                        reqText.style.display = 'none';
-                    }
-                    return;
-                }
-                const currentCount = counts[u.reqCreature] || 0;
-                const reqMet = currentCount >= u.reqCount;
-                const costMet = gameState.energy >= u.cost;
-                reqText.innerHTML = `需 ${u.reqCount} ${getCreatureDef(u.reqCreature).name} <span class="${reqMet ? 'text-green-400' : 'text-red-400'}">(${currentCount}/${u.reqCount})</span>`;
-                if (reqMet && costMet) {
-                    btn.disabled = false; btn.classList.add('bg-accent-energy', 'text-black'); btn.classList.remove('bg-gray-700', 'text-white'); el.classList.remove('opacity-50');
-                } else {
-                    btn.disabled = true; btn.classList.add('bg-gray-700', 'text-white'); btn.classList.remove('bg-accent-energy', 'text-black'); el.classList.add('opacity-50');
-                }
-            });
-        }
-
-        function purchaseUpgrade(uid) {
-            const u = UPGRADES.find(up => up.id === uid);
-            if (!u || gameState.purchasedUpgrades.has(uid)) return;
-            const counts = {};
-            gameState.cells.forEach(c => { if(c) counts[c.creatureId] = (counts[c.creatureId] || 0) + 1; });
-            if ((counts[u.reqCreature] || 0) < u.reqCount || gameState.energy < u.cost) { SoundSystem.playError(); return; }
-            gameState.energy -= u.cost;
-            energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
-            gameState.purchasedUpgrades.add(uid);
-            SoundSystem.playUpgrade();
-            if (u.type === 'grid') expandGrid(u.value);
-            else if (u.type === 'buff') gameState.activeBuffs[u.target] = (gameState.activeBuffs[u.target] || 0) + u.value;
-            updateUpgradesState();
-            if(gameState.selectedCellIndex !== -1) renderDetailPanel(gameState.selectedCellIndex, false);
-        }
-
-        function expandGrid(newSize) {
-            const oldSize = gameState.gridSize;
-            const oldCells = gameState.cells;
-            const newCells = Array(newSize * newSize).fill(null);
-            for (let y = 0; y < oldSize; y++) {
-                for (let x = 0; x < oldSize; x++) {
-                    const oldIdx = y * oldSize + x;
-                    const newIdx = y * newSize + x;
-                    newCells[newIdx] = oldCells[oldIdx];
-                }
-            }
-            gameState.cells = newCells;
-            gameState.gridSize = newSize;
-            gameState.selectedCellIndex = -1;
-            renderGrid();
-            renderDetailPanel(-1);
-        }
-
-        function updateStats() {
-            const counts = {};
-            gameState.cells.forEach(c => { if(c) counts[c.creatureId] = (counts[c.creatureId] || 0) + 1; });
-            if (Object.keys(counts).length === 0) { statsContainer.innerHTML = `<div class="text-gray-500 text-xs">暂无生物</div>`; return; }
-            let html = '';
-            CREATURES.forEach(c => { if (counts[c.id]) html += `<div class="flex justify-between items-center text-xs"><span class="text-gray-300 flex items-center gap-2"><i data-lucide="${c.icon}" class="w-3 h-3 ${c.color}"></i> ${c.name}</span><span class="font-mono text-gray-500">x${counts[c.id]}</span></div>`; });
-            statsContainer.innerHTML = html;
-            lucide.createIcons();
-        }
-
-        function removeCreature() { 
-            if (gameState.selectedCellIndex !== -1) {
-                killCreature(gameState.selectedCellIndex);
-            }
-        }
-        
-        function killCreature(idx) {
-            SoundSystem.playRemove();
-            const cell = gameState.cells[idx];
-            if(!cell) return;
-            gameState.cells[idx] = null;
-            const cellEl = document.getElementById(`cell-container-${idx}`);
-            if (cellEl) {
-                cellEl.innerHTML = `<div id="cell-visual-${idx}" class="absolute inset-0 rounded-xl border-2 border-ui-border bg-primary-dark hover:border-gray-500 opacity-50 hover:opacity-100 flex items-center justify-center transition-all"><i data-lucide="plus" class="w-6 h-6 text-gray-500"></i></div>`;
-                lucide.createIcons({root: cellEl});
-            }
-            if (gameState.selectedCellIndex === idx) renderDetailPanel(idx, false);
-        }
-
-        function getCreatureDef(id) { return CREATURES.find(c => c.id === id); }
-        function getNeighbors(index) {
-            const size = gameState.gridSize; const neighbors = [];
-            const row = Math.floor(index / size); const col = index % size;
-            if (row > 0) neighbors.push(index - size); if (row < size - 1) neighbors.push(index + size);
-            if (col > 0) neighbors.push(index - 1); if (col < size - 1) neighbors.push(index + 1);
-            return neighbors;
-        }
-        function selectCell(index) {
-            SoundSystem.playPlace(); 
-            gameState.selectedCellIndex = index;
-            highlightCell(index);
-            const x = (index % gameState.gridSize) + 1;
-            const y = Math.floor(index / gameState.gridSize) + 1;
-            statusText.innerHTML = `观测区域: <span class="text-accent-energy font-mono">[${x}, ${y}]</span>`;
-            renderDetailPanel(index);
-        }
-        function highlightCell(index) {
-            document.querySelectorAll('[id^="cell-visual-"]').forEach(v => v.classList.remove('selected-cell'));
-            const target = document.getElementById(`cell-visual-${index}`);
-            if (target) target.classList.add('selected-cell');
-        }
-
-        function renderGrid() {
-            gridEl.innerHTML = '';
-            gridEl.style.gridTemplateColumns = `repeat(${gameState.gridSize}, 1fr)`;
-            gridEl.style.gridTemplateRows = `repeat(${gameState.gridSize}, 1fr)`;
-
-            gameState.cells.forEach((cellData, i) => {
-                const cell = document.createElement('div');
-                cell.id = `cell-container-${i}`;
-                cell.className = 'relative group w-full h-full'; 
-                cell.onclick = () => selectCell(i);
-
-                if (cellData) {
-                    const c = getCreatureDef(cellData.creatureId);
-                    const isMax = cellData.level >= c.maxLevel;
-                    const borderClass = isMax ? 'max-level-border' : c.borderColor;
-                    
-                    cell.innerHTML = `
-                        <div id="cell-visual-${i}" class="absolute inset-0 rounded-xl border-2 transition-all duration-300 flex items-center justify-center overflow-hidden ${c.baseColor} ${borderClass}">
-                            <div id="cell-progress-${i}" class="absolute bottom-0 left-0 w-full transition-all duration-100 ease-linear z-0 ${c.fillColor}" style="height: ${cellData.progress}%"></div>
-                            <div id="cell-overlay-${i}" class="absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0"></div>
-                            <div class="absolute inset-0 z-10 flex items-center justify-center icon-wrapper transition-transform duration-300">
-                                <i data-lucide="${c.icon}" class="w-8 h-8 ${c.color} drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                            </div>
-                            <div class="absolute bottom-1.5 left-0 w-full text-center z-10">
-                                <span id="cell-level-${i}" class="text-[10px] ${isMax ? 'text-accent-gold font-black' : 'text-white/70 font-bold'} drop-shadow-md">
-                                    LV.${cellData.level}${isMax ? ' MAX' : ''}
-                                </span>
-                            </div>
-                            <div id="cell-rate-${i}" class="absolute top-1 right-1 z-20 text-[10px] font-bold"></div>
-                        </div>
-                        <div class="float-container absolute -top-2 left-0 w-full pointer-events-none z-50 flex justify-center overflow-visible"></div>
-                    `;
-                } else {
-                    cell.innerHTML = `
-                        <div id="cell-visual-${i}" class="absolute inset-0 rounded-xl border-2 border-ui-border bg-primary-dark hover:border-gray-500 opacity-50 hover:opacity-100 flex items-center justify-center transition-all">
-                            <i data-lucide="plus" class="w-6 h-6 text-gray-500"></i>
-                        </div>
-                    `;
-                }
-                gridEl.appendChild(cell);
-            });
-            if (gameState.selectedCellIndex !== -1) highlightCell(gameState.selectedCellIndex);
-            lucide.createIcons();
-        }
-
-        function checkRequirements(index, creatureId) {
-            const def = getCreatureDef(creatureId);
-            if (!def.foodConfig) return { ok: true };
-
-            const neighbors = getNeighbors(index);
-            const targets = def.foodConfig.targets;
-            const mode = def.foodConfig.mode;
-
-            const neighborCreatures = neighbors.map(nIdx => gameState.cells[nIdx]?.creatureId).filter(Boolean);
-            
-            if (mode === 'AND') {
-                const missing = targets.filter(t => !neighborCreatures.includes(t));
-                if (missing.length > 0) {
-                    const missingNames = missing.map(id => getCreatureDef(id).name).join(' 和 ');
-                    return { ok: false, reason: `缺少相邻的 ${missingNames}` };
-                }
-            } else {
-                const hasAny = targets.some(t => neighborCreatures.includes(t));
-                if (!hasAny) {
-                    const targetNames = targets.map(id => getCreatureDef(id).name).join(' 或 ');
-                    return { ok: false, reason: `缺少相邻的 ${targetNames}` };
-                }
-            }
-            return { ok: true };
-        }
-
-        function updateCellVisuals(idx, cellData) {
-            const visualEl = document.getElementById(`cell-visual-${idx}`);
-            const progressEl = document.getElementById(`cell-progress-${idx}`);
-            const levelEl = document.getElementById(`cell-level-${idx}`);
-            const overlayEl = document.getElementById(`cell-overlay-${idx}`);
-            const rateEl = document.getElementById(`cell-rate-${idx}`);
-            const iconWrapper = visualEl?.querySelector('.icon-wrapper');
-
-            if (!visualEl || !cellData) return;
-
-            if (progressEl) progressEl.style.height = `${cellData.progress}%`;
-            if (levelEl) {
-                const isMax = cellData.level >= getCreatureDef(cellData.creatureId).maxLevel;
-                levelEl.innerText = `LV.${cellData.level}${isMax ? ' MAX' : ''}`;
-                levelEl.className = `text-[10px] ${isMax ? 'text-accent-gold font-black' : 'text-white/70 font-bold'} drop-shadow-md`;
-                if (isMax) {
-                    visualEl.classList.remove(getCreatureDef(cellData.creatureId).borderColor);
-                    visualEl.classList.add('max-level-border');
-                }
-            }
-
-            visualEl.classList.remove('dying-state');
-            overlayEl.className = 'absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0'; 
-            iconWrapper.classList.remove('animate-shake');
-            rateEl.innerHTML = '';
-
-            if (cellData.state === 'dying') {
-                visualEl.classList.add('dying-state');
-                overlayEl.className = 'absolute inset-0 z-0 pointer-events-none dying-overlay opacity-100';
-                iconWrapper.classList.add('animate-shake');
-                rateEl.innerHTML = '<span class="text-red-500">⚠</span>';
-            } else if (cellData.speedMultiplier < 0) {
-                visualEl.classList.add('dying-state');
-                overlayEl.className = 'absolute inset-0 z-0 pointer-events-none bg-black/60 opacity-100';
-                rateEl.innerHTML = '<span class="text-red-400">▼</span>';
-            } else if (cellData.speedMultiplier > 1.0) {
-                rateEl.innerHTML = '<span class="text-green-400">▲▲</span>';
-            } else if (cellData.speedMultiplier < 1.0 && cellData.speedMultiplier > 0) {
-                rateEl.innerHTML = '<span class="text-yellow-500">▼</span>';
-            }
-        }
-
-        function placeCreature(creatureId) {
-            const idx = gameState.selectedCellIndex;
-            if (idx === -1) return;
-            const def = getCreatureDef(creatureId);
-            if (gameState.energy < def.cost) { SoundSystem.playError(); return; }
-            
-            const check = checkRequirements(idx, creatureId);
-            if (!check.ok) {
-                alert(`${check.reason}，${def.name} 无法生存！`);
-                SoundSystem.playError();
-                return;
-            }
-
-            SoundSystem.playPlace();
-            gameState.energy -= def.cost;
-            energyEl.innerText = Math.floor(gameState.energy).toLocaleString();
-            gameState.cells[idx] = { creatureId: creatureId, level: 1, progress: 0, speedMultiplier: 1.0, state: 'normal' };
-            renderGrid(); renderDetailPanel(idx);
-        }
-
-        // 记录上一次选中的索引，用于判断是否需要重绘结构
-        let lastRenderedIndex = -2; 
-
-        function renderDetailPanel(index, animate = true) {
-            if (index === -1) {
-                if (lastRenderedIndex !== -1) {
-                    detailPanel.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-60"><i data-lucide="microscope" class="w-16 h-16 mb-4 stroke-1"></i><p class="text-lg">请选择区域</p></div>`;
-                    lucide.createIcons();
-                    lastRenderedIndex = -1;
-                }
-                return;
-            }
-
-            const cell = gameState.cells[index];
-            const isCellEmpty = !cell; 
-            
-            const needsFullRender = (index !== lastRenderedIndex) || 
-                                    (lastRenderedIndex === index && isCellEmpty !== (document.getElementById('build-list') !== null));
-
-            if (needsFullRender) {
-                lastRenderedIndex = index;
-                const animClass = animate ? 'animate-fade-in' : '';
-                
-                if (cell) {
-                    // --- 渲染生物详情视图 (静态结构) ---
-                    const def = getCreatureDef(cell.creatureId);
-                    const isMax = cell.level >= def.maxLevel;
-                    
-                    detailPanel.innerHTML = `
-                        <div class="bg-primary-dark border border-ui-border rounded-xl p-5 ${animClass}">
-                            <div class="flex items-center gap-4 mb-4">
-                                <div class="w-16 h-16 rounded-xl ${def.fillColor} border ${def.borderColor} flex items-center justify-center shadow-lg relative">
-                                    <i data-lucide="${def.icon}" class="w-8 h-8 text-white"></i>
-                                    ${isMax ? '<div class="absolute -top-2 -right-2 text-yellow-400 animate-bounce">👑</div>' : ''}
-                                </div>
-                                <div>
-                                    <h3 class="text-xl ${def.color}">${def.name}</h3>
-                                    <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                                        <span id="panel-level-text" class="${isMax ? 'text-accent-gold font-bold' : 'text-gray-400'}">LV.${cell.level} / ${def.maxLevel}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="space-y-3 text-sm text-gray-400 bg-secondary-dark/50 p-4 rounded-lg">
-                                <div class="flex justify-between items-start">
-                                    <span>当前产出 (单次/周期)</span>
-                                    <div class="text-right">
-                                        <span id="panel-efficiency" class="text-accent-energy font-bold text-lg">--</span>
-                                        <div id="panel-status-text"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button onclick="removeCreature()" class="mt-6 w-full py-3 border border-red-900/50 text-red-400 rounded-lg hover:bg-red-900/20 transition flex items-center justify-center gap-2 group">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i> 清除物种
-                            </button>
-                        </div>`;
-                } else {
-                    // --- 渲染建造列表视图 (静态结构) ---
-                    let html = `<div id="build-list" class="space-y-1 ${animClass} pb-4">`;
-                    const sortedCreatures = [...CREATURES].sort((a, b) => a.cost - b.cost);
-                    
-                    sortedCreatures.forEach(c => {
-                        let reqHtml = '<span class="text-green-400">自养生物</span>';
-                        if (c.foodConfig) {
-                            const names = c.foodConfig.targets.map(tid => getCreatureDef(tid).name);
-                            const joinStr = c.foodConfig.mode === 'AND' ? ' + ' : ' / ';
-                            reqHtml = `<span class="flex items-center gap-1 text-orange-300"><i data-lucide="link" class="w-3 h-3"></i> 需: ${names.join(joinStr)}</span>`;
-                        }
-                        const category = CATEGORIES[c.category];
-                        const badge = category ? `<span class="text-[9px] px-1 rounded border ${category.badgeColor} ml-2 flex items-center gap-1"><i data-lucide="${category.icon}" class="w-3 h-3"></i>${category.name}</span>` : '';
-                        const outputDisplay = `${c.baseOutput} / ${c.interval / 1000}s`;
-
-                        html += `
-                            <button id="btn-build-${c.id}" onclick="placeCreature('${c.id}')" class="w-full text-left relative overflow-hidden group rounded-xl border-2 transition-all duration-200 mb-2 border-gray-700 bg-secondary-dark">
-                                <div class="absolute top-2 right-2 text-[10px] text-gray-500 font-bold">Max LV.${c.maxLevel}</div>
-                                <div class="p-3 flex items-center gap-3 relative z-10">
-                                    <div class="w-12 h-12 rounded-lg ${c.fillColor} flex items-center justify-center border shrink-0"><i data-lucide="${c.icon}" class="w-6 h-6 text-white"></i></div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex justify-between items-center mb-1">
-                                            <div class="flex items-center overflow-hidden">
-                                                <span class="font-bold text-gray-200 truncate text-sm" id="name-${c.id}">${c.name}</span>
-                                                ${badge}
-                                            </div>
-                                            <span id="cost-text-${c.id}" class="text-xs font-mono shrink-0 ml-2"><i data-lucide="zap" class="w-3 h-3 inline"></i> ${c.cost}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center text-[10px] text-gray-400 mb-1">
-                                            <span class="flex items-center gap-1 text-accent-energy"><i data-lucide="zap" class="w-3 h-3"></i> ${outputDisplay}</span>
-                                            ${reqHtml}
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>`;
-                    });
-                    html += `</div>`;
-                    detailPanel.innerHTML = html;
-                }
-                lucide.createIcons();
-            }
-
-            // --- 差量更新 (每帧运行) ---
-            if (cell) {
-                const def = getCreatureDef(cell.creatureId);
-                const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
-                const currentOutput = Math.floor((def.baseOutput + buffValue) * (1 + (cell.level - 1) * 0.2));
-                
-                const effEl = document.getElementById('panel-efficiency');
-                if(effEl) effEl.innerText = `${currentOutput} / ${def.interval / 1000}s`;
-
-                const lvlEl = document.getElementById('panel-level-text');
-                if(lvlEl) {
-                    const isMax = cell.level >= def.maxLevel;
-                    lvlEl.innerText = `LV.${cell.level} / ${def.maxLevel}`;
-                    lvlEl.className = isMax ? 'text-accent-gold font-bold' : 'text-gray-400';
-                }
-
-                const statusEl = document.getElementById('panel-status-text');
-                if(statusEl) {
-                    let statusHtml = '';
-                    if (cell.buffs > 0) statusHtml += `<div class="flex items-center gap-1 text-green-400 text-xs mt-1"><i data-lucide="chevrons-up" class="w-3 h-3"></i> 食物充沛 (+${Math.round(cell.buffs * 100)}%)</div>`;
-                    if (cell.symbiosis > 0) statusHtml += `<div class="flex items-center gap-1 text-cyan-400 text-xs mt-1"><i data-lucide="heart-handshake" class="w-3 h-3"></i> 环境共生 (+${Math.round(cell.symbiosis * 100)}%)</div>`;
-                    if (cell.competition < 0) statusHtml += `<div class="flex items-center gap-1 text-purple-400 text-xs mt-1"><i data-lucide="users" class="w-3 h-3"></i> 资源竞争 (${Math.round(cell.competition * 100)}%)</div>`;
-                    if (cell.debuffs > 0) statusHtml += `<div class="flex items-center gap-1 text-yellow-500 text-xs mt-1"><i data-lucide="chevrons-down" class="w-3 h-3"></i> 受到捕食 (-${Math.round(cell.debuffs * 100)}%)</div>`;
-                    if (cell.speedMultiplier <= 0) statusHtml = `<div class="flex items-center gap-1 text-red-500 text-xs mt-1"><i data-lucide="skull" class="w-3 h-3"></i> 极度饥饿/被捕食殆尽</div>`;
-                    
-                    if (statusHtml === '') statusHtml = `<div class="flex items-center gap-1 text-gray-500 text-xs mt-1">生态平衡</div>`;
-                    
-                    if (statusEl.innerHTML !== statusHtml) {
-                        statusEl.innerHTML = statusHtml;
-                        lucide.createIcons({root: statusEl});
-                    }
-                }
-
-            } else {
-                // 更新建造按钮状态
-                CREATURES.forEach(c => {
-                    const btn = document.getElementById(`btn-build-${c.id}`);
-                    const costText = document.getElementById(`cost-text-${c.id}`);
-                    const nameText = document.getElementById(`name-${c.id}`);
-                    
-                    if (btn) {
-                        const canAfford = gameState.energy >= c.cost;
-                        if (canAfford) {
-                            btn.classList.remove('border-ui-border', 'bg-primary-dark/50', 'opacity-60', 'cursor-not-allowed');
-                            btn.classList.add('border-gray-700', 'bg-secondary-dark', 'hover:border-accent-energy');
-                            btn.disabled = false;
-                            if(costText) costText.className = "text-xs font-mono text-accent-energy shrink-0 ml-2";
-                            if(nameText) nameText.className = "font-bold text-gray-200 truncate text-sm";
-                        } else {
-                            btn.classList.add('border-ui-border', 'bg-primary-dark/50', 'opacity-60', 'cursor-not-allowed');
-                            btn.classList.remove('border-gray-700', 'bg-secondary-dark', 'hover:border-accent-energy');
-                            btn.disabled = true;
-                            if(costText) costText.className = "text-xs font-mono text-red-400 shrink-0 ml-2";
-                            if(nameText) nameText.className = "font-bold text-gray-500 truncate text-sm";
-                        }
-                    }
-                });
-            }
-        }
-
+        // 暂停功能
+        pauseBtn.addEventListener('click', () => {
+            gameState.isPaused = !gameState.isPaused;
+            const icon = gameState.isPaused ? 'play' : 'pause';
+            pauseBtn.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i>`;
+            lucide.createIcons({root: pauseBtn});
+        });
+
+        // 页面加载完成后初始化
         window.onload = init;
     </script>
 </body>
