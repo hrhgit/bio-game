@@ -959,6 +959,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// 教程模态框开关
+function toggleGuide() {
+    const modal = document.getElementById('guide-modal');
+    const content = document.getElementById('guide-content');
+    
+    if (modal.classList.contains('hidden')) {
+        // 打开
+        if (!gameState.isPaused) document.getElementById('pause-btn').click(); // 自动暂停
+        
+        modal.classList.remove('hidden');
+        // 强制重绘，确保 transition 生效
+        void modal.offsetWidth;
+        
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+        
+        // 生成图标
+        lucide.createIcons({ root: content });
+    } else {
+        // 关闭
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // 如果是因为开教程暂停的，关掉时可以考虑自动恢复，
+            // 但为了安全起见（玩家可能想思考一下），通常保持暂停状态让玩家手动开始
+        }, 300);
+    }
+}
+
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
 // 给肉鸽按钮挂 watcher：根据“当前能量是否足够且未购买”来控制启用/禁用
 // 肉鸽道具按钮：用监视器统一控制「是否可购买」 → 启用 / 禁用 + 颜色
