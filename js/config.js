@@ -53,7 +53,7 @@ const CREATURES = [
         category: 'mollusk', id: 'jellyfish', name: '幽灵水母', tier: 3, maxLevel: 8, 
         cost: 600, baseOutput: 100, interval: 5000,
         foodConfig: { mode: 'OR', targets: ['plankton', 'shrimp'] }, 
-        consumptionImpact: 0.3, starvationRate: -15, 
+        consumptionImpact: 0.4, starvationRate: -15, 
         color: 'text-indigo-300', baseColor: 'bg-indigo-950', fillColor: 'bg-indigo-600', borderColor: 'border-indigo-800', icon: 'ghost', desc: '漂浮的捕食者。',
         relations: [
             { target: 'jellyfish', type: 'symbiosis', val: 0.1, msg: '水母群聚' },
@@ -64,7 +64,7 @@ const CREATURES = [
         category: 'reptile', id: 'turtle', name: '装甲海龟', tier: 3, maxLevel: 20, 
         cost: 1000, baseOutput: 160, interval: 6000,
         foodConfig: { mode: 'OR', targets: ['crab', 'plankton'] }, 
-        consumptionImpact: 0.3, starvationRate: -10, 
+        consumptionImpact: 0, starvationRate: -10, 
         color: 'text-emerald-300', baseColor: 'bg-emerald-950', fillColor: 'bg-emerald-600', borderColor: 'border-emerald-800', icon: 'shield', desc: '厚重的甲壳，食谱广泛。',
         relations: []
     },
@@ -72,7 +72,7 @@ const CREATURES = [
         category: 'fish', id: 'eel', name: '雷霆鳗', tier: 3, maxLevel: 8, 
         cost: 1400, baseOutput: 160, interval: 4000,
         foodConfig: { mode: 'AND', targets: ['shrimp', 'plankton'] }, 
-        consumptionImpact: 0.3, starvationRate: -18, 
+        consumptionImpact: 0.4, starvationRate: -18, 
         color: 'text-violet-300', baseColor: 'bg-violet-950', fillColor: 'bg-violet-600', borderColor: 'border-violet-800', icon: 'activity', desc: '敏捷的猎手，需多种食物。',
         relations: [
             { target: 'kelp', type: 'symbiosis', val: 0.3, msg: '伏击环境' },
@@ -83,15 +83,18 @@ const CREATURES = [
         category: 'fish', id: 'hunter', name: '深海猎手', tier: 4, maxLevel: 8, 
         cost: 2000, baseOutput: 300, interval: 6000,
         foodConfig: { mode: 'AND', targets: ['jellyfish', 'turtle'] }, 
-        consumptionImpact: 0.3, starvationRate: -20, 
+        consumptionImpact: 0.5, starvationRate: -20, 
         color: 'text-orange-300', baseColor: 'bg-orange-950', fillColor: 'bg-orange-600', borderColor: 'border-orange-800', icon: 'crosshair', desc: '凶猛的顶级掠食者，成群狩猎。',
-        relations: [{ target: 'algae', type: 'symbiosis', val: 0.3, msg: '富氧水域' }]
+        relations: [
+            { target: 'algae', type: 'symbiosis', val: 0.3, msg: '富氧水域' },
+            { target: 'hunter', type: 'competition', val: -0.3, msg: '王不见王' }
+        ]
     },
     { 
         category: 'apex', id: 'leviathan', name: '深渊巨兽', tier: 5, maxLevel: 10, 
         cost: 4000, baseOutput: 650, interval: 8000,
         foodConfig: { mode: 'AND', targets: ['hunter', 'eel'] }, 
-        consumptionImpact: 0.3, starvationRate: -30, 
+        consumptionImpact: 0.6, starvationRate: -30, 
         color: 'text-red-500', baseColor: 'bg-red-950', fillColor: 'bg-red-700', borderColor: 'border-red-800', icon: 'skull', desc: '深海的霸主，吞噬高阶猎手。',
         relations: [{ target: 'leviathan', type: 'competition', val: -0.5, msg: '王不见王' }]
     }
@@ -126,6 +129,7 @@ const RARITY_THEME = {
         title: 'text-gray-300',
         icon: 'text-gray-500',
         badge: 'text-gray-500',
+        iconBg: 'bg-gray-700', // ✅ 新增：统一的图标底色
         btnEnabled: 'border-gray-500 text-gray-300 hover:bg-gray-700 hover:border-gray-400 hover:text-gray-300'
     },
     '稀有': {
@@ -134,6 +138,7 @@ const RARITY_THEME = {
         title: 'text-green-100',
         icon: 'text-green-400',
         badge: 'text-green-500',
+        iconBg: 'bg-green-800', // ✅ 新增
         btnEnabled: 'border-green-600/50 text-green-400 hover:bg-green-500/20 hover:border-green-400/50 hover:text-green-300'
     },
     '罕见': {
@@ -142,6 +147,7 @@ const RARITY_THEME = {
         title: 'text-sky-100',
         icon: 'text-sky-400',
         badge: 'text-sky-500',
+        iconBg: 'bg-sky-800', // ✅ 新增
         btnEnabled: 'border-sky-600/50 text-sky-400 hover:bg-sky-500/20 hover:border-sky-400/50 hover:text-sky-300'
     },
     '史诗': {
@@ -150,6 +156,7 @@ const RARITY_THEME = {
         title: 'text-purple-100',
         icon: 'text-purple-400',
         badge: 'text-purple-500',
+        iconBg: 'bg-purple-800', // ✅ 新增
         btnEnabled: 'border-purple-600/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400/50 hover:text-purple-300'
     },
     '传说': {
@@ -158,6 +165,7 @@ const RARITY_THEME = {
         title: 'text-amber-100',
         icon: 'text-amber-400',
         badge: 'text-amber-500',
+        iconBg: 'bg-amber-800', // ✅ 新增
         btnEnabled: 'border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-300/50 hover:text-amber-200'
     }
 };
@@ -171,23 +179,48 @@ const ROGUE_RARITY_WEIGHTS = {
     '传说': 1
 };
 
+// ✅ 新增：肉鸽道具品质 → 价格倍率
+const ROGUE_RARITY_COST_MULT = {
+    '普通': 1,
+    '稀有': 2,
+    '罕见': 3,
+    '史诗': 4,
+    '传说': 5
+};
+
 // 肉鸽道具池
 const ROGUE_ITEMS_POOL = [
-    { id:'chloroplast_outburst', name:'叶绿爆发', desc:'所有 T1 生产者 +30% 速度', mutationId:'chloroplast_outburst', rarity: '普通', icon: 'sprout', color: 'text-green-400', bgColor: 'bg-gray-500' },
-    { id:'edge_effect', name:'边缘效应', desc:'边缘格子 +25% 速度', mutationId:'edge_effect', rarity: '普通', icon: 'border-all', color: 'text-blue-400', bgColor: 'bg-gray-500' },
-    
-    { id:'interlaced_complement', name:'交错生态', desc:'四周没有同类时 +40% 速度', mutationId:'interlaced_complement', rarity: '稀有', icon: 'grid-3x3', color: 'text-emerald-400', bgColor: 'bg-green-600' },
-    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +20% 速度', mutationId:'predator_instinct', rarity: '稀有', icon: 'target', color: 'text-red-400', bgColor: 'bg-green-600' },
-    
-    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +50% 产出', mutationId:'triplet_resonance', rarity: '罕见', icon: 'zap', color: 'text-yellow-400', bgColor: 'bg-sky-600' },
-    { id:'quantum_link', name:'量子牵引', desc:'共生/竞争改为包含斜角邻居', mutationId:'quantum_link', rarity: '罕见', icon: 'link', color: 'text-purple-400', bgColor: 'bg-sky-600' },
-    
-    { id:'quad_core', name:'四核矩阵', desc:'2x2 方阵同类时 +80% 速度', mutationId:'quad_core', rarity: '史诗', icon: 'box', color: 'text-indigo-400', bgColor: 'bg-purple-600' },
-    { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: '史诗', icon: 'heart', color: 'text-pink-400', bgColor: 'bg-purple-600' },
-    { id:'greedy_digestion', name:'贪婪消化', desc:'食物富余转化为 Buff 的效率提高', mutationId:'greedy_digestion', rarity: '史诗', icon: 'utensils', color: 'text-orange-400', bgColor: 'bg-purple-600' },
-    
-    { id:'central_dogma', name:'中央意识核', desc:'中心 3x3 区域 +100% 速度', mutationId:'central_dogma', rarity: '传说', icon: 'cpu', color: 'text-amber-400', bgColor: 'bg-amber-600' },
-    { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '传说', icon: 'shield', color: 'text-cyan-400', bgColor: 'bg-amber-600' }
+    // 普通 (Common)
+    { id:'abyssal_pressure', name:'深海高压', desc:'位于最底层一行的所有生物 +20% 速度', mutationId:'abyssal_pressure', rarity: '普通', icon: 'arrow-down-to-line' },
+    { id:'surface_bloom', name:'表层光合', desc:'位于最顶层一行的海草藻类 +30% 速度', mutationId:'surface_bloom', rarity: '普通', icon: 'sun' },
+    { id:'chloroplast_outburst', name:'叶绿爆发', desc:'所有 T1 生产者 +20% 速度', mutationId:'chloroplast_outburst', rarity: '普通', icon: 'leaf' },
+    { id:'interlaced_complement', name:'交错生态', desc:'四周没有同类时 +20% 速度', mutationId:'interlaced_complement', rarity: '普通', icon: 'grid-2x2' },
+    { id:'pioneer_swarm', name:'先锋群落', desc:'最外圈一圈格子的产出 +20%', mutationId:'pioneer_swarm', rarity: '普通', icon: 'maximize' },
+
+    // 稀有 (Rare)
+    { id:'cornerstones', name:'四角基石', desc:'地图四个角落的生物 +40% 速度', mutationId:'cornerstones', rarity: '稀有', icon: 'move-diagonal' },
+    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +40% 速度', mutationId:'predator_instinct', rarity: '稀有', icon: 'swords' },
+    { id:'tidal_resonance', name:'潮汐共振', desc:'生产周期 -15%', mutationId:'tidal_resonance', rarity: '稀有', icon: 'waves' },
+    { id:'predation_cycle', name:'捕食循环', desc:'每有单位死亡，全局 +5% 速度 (上限 100%)', mutationId:'predation_cycle', rarity: '稀有', icon: 'recycle' },
+
+    // 罕见 (Uncommon)
+    { id:'ecological_mosaic', name:'生态马赛克', desc:'四周邻居种类均不同时，该生物 +60% 速度', mutationId:'ecological_mosaic', rarity: '罕见', icon: 'layout-dashboard' },
+    { id:'schooling_storm', name:'甲壳风暴', desc:'场上每存在一个「甲壳节肢」，所有甲壳类 +10% 速度', mutationId:'schooling_storm', rarity: '罕见', icon: 'shell' },
+    { id:'thriving_diversity', name:'繁荣多样性', desc:'每存在一种不同物种，全局生产效率 +5%', mutationId:'thriving_diversity', rarity: '罕见', icon: 'library' },
+    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +60% 产出', mutationId:'triplet_resonance', rarity: '罕见', icon: 'align-justify' },
+    { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: '罕见', icon: 'heart-handshake' },
+    { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '罕见', icon: 'shield-check' },
+    { id:'fractal_grid', name:'分形网格', desc:'对角也视为相邻 (捕食/共生/竞争生效)', mutationId:'fractal_grid', rarity: '罕见', icon: 'grid-3x3' },
+
+    // 史诗 (Epic)
+    { id:'gluttony', name:'暴食胃袋', desc:'食物富余转化的加速 Buff 效果翻倍', mutationId:'gluttony', rarity: '史诗', icon: 'utensils' },
+    { id:'quad_core', name:'四核矩阵', desc:'2x2 方阵同类时 +80% 速度', mutationId:'quad_core', rarity: '史诗', icon: 'box' },
+    { id:'mutualism_contract', name:'互利契约', desc:'共生加成翻倍，竞争惩罚也翻倍', mutationId:'mutualism_contract', rarity: '史诗', icon: 'file-signature' },
+
+    // 传说 (Legendary)
+    { id:'hyper_metabolism', name:'进化阶梯', desc:'单线生物等级递增时，该线获得 (20% × 序列长度) 的速度加成', mutationId:'hyper_metabolism', rarity: '传说', icon: 'trending-up' },
+    { id:'apex_presence', name:'顶级威压', desc:'每有一只 T4/T5，所有 T1/T2 生物 +100% 产出', mutationId:'apex_presence', rarity: '传说', icon: 'crown' },
+    { id:'central_dogma', name:'中央意识核', desc:'中心 1x1 区域 +200% 速度', mutationId:'central_dogma', rarity: '传说', icon: 'target' }
 ];
 
 // tier → 稀有度
@@ -203,7 +236,7 @@ const RARITY_BY_TIER = {
 const PER_CREATURE_BOOST_ITEMS = CREATURES.map(cre => ({
     id: `boost_${cre.id}`,
     name: `${cre.name} 适应性强化`,
-    desc: `为【${cre.name}】额外增加 10% 基础产出，可在不同刷新中多次购买并叠加。`,
+    desc: `为【${cre.name}】额外增加 10% 基础产出`,
     rarity: RARITY_BY_TIER[cre.tier] || '普通',
 
     icon: cre.icon || 'zap',
@@ -224,3 +257,5 @@ const CONFIG = {
 };
 
 const MAX_ROGUE_ITEM_BAR = 5;
+
+const BOOST_ITEM_COST_GROWTH = 1.2;

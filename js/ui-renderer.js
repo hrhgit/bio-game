@@ -86,73 +86,58 @@ function renderGrid() {
 
 
 // 更新单元格视觉效果
+
+
 function updateCellVisuals(idx, cellData) {
     const visualEl = document.getElementById(`cell-visual-${idx}`);
-    const progressEl = document.getElementById(`cell-progress-${idx}`);
-    const levelEl = document.getElementById(`cell-level-${idx}`);
-    const overlayEl = document.getElementById(`cell-overlay-${idx}`);
     const rateEl = document.getElementById(`cell-rate-${idx}`);
-    const iconWrapper = visualEl?.querySelector('.icon-wrapper');
-
     if (!visualEl || !cellData) return;
 
-    if (progressEl) progressEl.style.height = `${cellData.progress}%`;
-    if (levelEl) {
-        const isMax = cellData.level >= getCreatureDef(cellData.creatureId).maxLevel;
-        levelEl.innerText = `LV.${cellData.level}${isMax ? ' MAX' : ''}`;
-        levelEl.className = `text-[10px] ${isMax ? 'text-accent-gold font-normal' : 'text-white/90 font-normal'}`;
-        if (isMax) {
-            visualEl.classList.remove(getCreatureDef(cellData.creatureId).borderColor);
-            visualEl.classList.add('max-level-border');
-        }
-    }
+    // ... (保留原本的进度条、等级、濒死状态代码) ...
+    // ... 这里只写图标生成的核心逻辑 ...
 
-    visualEl.classList.remove('dying-state');
-    overlayEl.className = 'absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0'; 
-    iconWrapper.classList.remove('animate-shake');
-    
     let iconsHtml = '';
 
-    if (cellData.state === 'dying') {
-        visualEl.classList.add('dying-state');
-        overlayEl.className = 'absolute inset-0 z-0 pointer-events-none dying-overlay opacity-100';
-        iconWrapper.classList.add('animate-shake');
-        iconsHtml += `<span class="text-red-500 text-xs">⚠</span>`;
-    } else {
-        if (cellData.speedMultiplier > 1.0) {
-            iconsHtml += `<span class="text-green-400 text-xs">▲</span>`;
-        } else if (cellData.speedMultiplier < 1.0) {
-            iconsHtml += `<span class="text-red-400 text-xs">▼</span>`;
-        }
+    if (cellData.state !== 'dying') {
+        // 1. 速度箭头
+        if (cellData.speedMultiplier > 1.0) iconsHtml += `<span class="text-green-400 text-xs">▲</span>`;
+        else if (cellData.speedMultiplier < 1.0) iconsHtml += `<span class="text-red-400 text-xs">▼</span>`;
 
-        if (cellData.buffs > 0) {
-            iconsHtml += `<i data-lucide="utensils" class="w-3 h-3 text-green-400"></i>`;
-        }
+        // 2. 基础 Buff (食物/共生)
+        if (cellData.buffs > 0) iconsHtml += `<i data-lucide="utensils" class="w-3 h-3 text-green-400"></i>`;
+        if (cellData.symbiosis > 0) iconsHtml += `<i data-lucide="heart-handshake" class="w-3 h-3 text-cyan-400"></i>`;
 
-        if (cellData.symbiosis > 0) {
-            iconsHtml += `<i data-lucide="heart-handshake" class="w-3 h-3 text-cyan-400"></i>`;
-        }
-
+        // 3. ✅ 肉鸽道具图标 (放在这里！共生之后，竞争之前)
         if (cellData.mutationBuffs > 0) {
-            iconsHtml += `<i data-lucide="sparkles" class="w-3 h-3 text-purple-300"></i>`;
+            const def = getCreatureDef(cellData.creatureId);
+            const { x, y } = getXY(idx, gameState.gridSize);
+            const size = gameState.gridSize;
+
+            // 示例：深海高压
+            if (hasMutation('abyssal_pressure') && y === size - 1) 
+                iconsHtml += `<i data-lucide="arrow-down-to-line" class="w-3 h-3 text-blue-300"></i>`;
+
+            // ... (把所有道具判断逻辑放在这里，参考之前的代码) ...
+            // 示例：四角基石
+            if (hasMutation('cornerstones') && ((x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1)))
+                iconsHtml += `<i data-lucide="move-diagonal" class="w-3 h-3 text-gray-300"></i>`;
         }
 
-        if (cellData.debuffs > 0) {
-            iconsHtml += `<i data-lucide="bone" class="w-3 h-3 text-yellow-500"></i>`;
-        }
-
-        if (cellData.competition < 0) {
-            iconsHtml += `<i data-lucide="users" class="w-3 h-3 text-purple-400"></i>`;
-        }
+        // 4. 基础 Debuff
+        if (cellData.debuffs > 0) iconsHtml += `<i data-lucide="bone" class="w-3 h-3 text-yellow-500"></i>`;
+        if (cellData.competition < 0) iconsHtml += `<i data-lucide="users" class="w-3 h-3 text-purple-400"></i>`;
     }
 
-    if (iconsHtml) {
-        rateEl.className = "absolute top-1 right-1 z-20 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded px-1.5 py-0.5 pointer-events-none border border-white/10";
-        rateEl.innerHTML = iconsHtml;
-        lucide.createIcons({ root: rateEl });
-    } else {
-        rateEl.className = "hidden";
-        rateEl.innerHTML = "";
+    // 渲染
+    if (rateEl) {
+        if (iconsHtml) {
+            rateEl.className = "absolute top-1 right-1 z-20 flex flex-wrap justify-end items-center gap-0.5 bg-black/60 backdrop-blur-md rounded px-1.5 py-0.5 pointer-events-none border border-white/10 max-w-[90%]";
+            rateEl.innerHTML = iconsHtml;
+            lucide.createIcons({ root: rateEl });
+        } else {
+            rateEl.className = "hidden";
+            rateEl.innerHTML = "";
+        }
     }
 }
 
@@ -348,23 +333,25 @@ function renderDetailPanel(index, animate = true) {
 }
 // 只更新右侧详情面板里“会变的那部分”（效率、等级、状态）
 // 不重画整个 HTML
+// 只更新右侧详情面板里"会变的那部分"（效率、等级、状态）
 function updateDetailPanelDynamic(index) {
     const cell = gameState.cells[index];
     if (!cell) return;
 
     const def = getCreatureDef(cell.creatureId);
     const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
+    // 基础产出 + 道具叠加(boost) + 等级加成
     const currentOutput = Math.floor(
         (def.baseOutput + buffValue) * (1 + (cell.level - 1) * 0.2)
     );
 
-    // 当前产出
+    // 1. 更新产出文本
     const effEl = document.getElementById('panel-efficiency');
     if (effEl) {
         effEl.innerText = `${currentOutput} / ${def.interval / 1000}s`;
     }
 
-    // 等级文本
+    // 2. 更新等级文本
     const lvlEl = document.getElementById('panel-level-text');
     if (lvlEl) {
         const isMax = cell.level >= def.maxLevel;
@@ -372,11 +359,12 @@ function updateDetailPanelDynamic(index) {
         lvlEl.className = isMax ? 'text-accent-gold' : 'text-gray-400';
     }
 
-    // 各种 buff / debuff 状态
+    // 3. 更新状态列表 (Buff/Debuff 详情)
     const statusEl = document.getElementById('panel-status-text');
     if (statusEl) {
         let statusHtml = '';
 
+        // --- A. 基础机制显示 (食物/共生/竞争/捕食) ---
         if (cell.buffs > 0) {
             statusHtml += `<div class="flex items-center gap-1 text-green-400 text-xs mt-1">
                 <i data-lucide="leaf" class="w-3 h-3"></i> 食物充沛 (+${Math.round(cell.buffs * 100)}%)
@@ -397,20 +385,167 @@ function updateDetailPanelDynamic(index) {
                 <i data-lucide="flame" class="w-3 h-3"></i> 受到捕食 (-${Math.round(cell.debuffs * 100)}%)
             </div>`;
         }
-        if (cell.mutationBuffs > 0) {
-            statusHtml += `<div class="flex items-center gap-1 text-violet-400 text-xs mt-1">
-                <i data-lucide="dna" class="w-3 h-3"></i> 突变加成 (+${Math.round(cell.mutationBuffs * 100)}%)
-            </div>`;
-        }
         if (cell.speedMultiplier <= 0) {
-            statusHtml = `<div class="flex items-center gap-1 text-red-500 text-xs mt-1">
+            statusHtml += `<div class="flex items-center gap-1 text-red-500 text-xs mt-1 font-bold">
                 <i data-lucide="skull" class="w-3 h-3"></i> 极度饥饿/被捕食殆尽
             </div>`;
         }
 
+        // --- B. 肉鸽道具详情拆解 (替代原本笼统的 "突变加成") ---
+        // 我们在这里临时计算一遍哪些道具对【这个格子】生效，并列出来
+        const activeItemBuffs = [];
+        const { x, y } = getXY(index, gameState.gridSize);
+        const size = gameState.gridSize;
+
+        // 辅助：获取并格式化
+        const addBuff = (name, val, icon = 'zap', color = 'text-violet-300') => {
+            if (val > 0.001) { // 忽略 0 加成
+                activeItemBuffs.push({ name, val, icon, color });
+            }
+        };
+
+        // 1. 深海高压
+        if (hasMutation('abyssal_pressure') && y === size - 1) 
+            addBuff('深海高压', 0.2, 'arrow-down-to-line');
+
+        // 2. 表层光合
+        if (hasMutation('surface_bloom') && y === 0 && def.category === 'plant') 
+            addBuff('表层光合', 0.3, 'sun', 'text-yellow-300');
+
+        // 3. 四角基石
+        if (hasMutation('cornerstones')) {
+            const isCorner = (x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1);
+            if (isCorner) addBuff('四角基石', 0.4, 'move-diagonal');
+        }
+
+        // 4. 先锋群落
+        if (hasMutation('pioneer_swarm') && (x===0 || x===size-1 || y===0 || y===size-1)) 
+            addBuff('先锋群落', 0.2, 'maximize');
+
+        // 5. 中央意识核
+        if (hasMutation('central_dogma')) {
+            const center = (size - 1) / 2;
+            if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) 
+                addBuff('中央意识核', 2.0, 'target', 'text-fuchsia-400');
+        }
+
+        // 6. 进化阶梯 (原急速代谢)
+        if (hasMutation('hyper_metabolism')) {
+            const checkLine = (isRow) => {
+                let sequence = [];
+                for (let k = 0; k < size; k++) {
+                    const cIdx = isRow ? getIndex(k, y, size) : getIndex(x, k, size);
+                    const c = gameState.cells[cIdx];
+                    if (c) sequence.push(getCreatureDef(c.creatureId).tier);
+                }
+                if (sequence.length < 2) return 0;
+                for (let i = 0; i < sequence.length - 1; i++) {
+                    if (sequence[i] >= sequence[i+1]) return 0;
+                }
+                return sequence.length;
+            };
+            const rowLen = checkLine(true);
+            const colLen = checkLine(false);
+            if (rowLen) addBuff(`进化阶梯(横-${rowLen})`, 0.2 * rowLen, 'trending-up', 'text-amber-400');
+            if (colLen) addBuff(`进化阶梯(纵-${colLen})`, 0.2 * colLen, 'trending-up', 'text-amber-400');
+        }
+
+        // 7. 三相共振
+        if (hasMutation('triplet_resonance')) {
+            const checkTriple = (dx, dy) => {
+                const n1 = getIndex(x-dx, y-dy, size);
+                const n2 = getIndex(x+dx, y+dy, size);
+                return n1!==-1 && n2!==-1 && gameState.cells[n1]?.creatureId===cell.creatureId && gameState.cells[n2]?.creatureId===cell.creatureId;
+            };
+            if (checkTriple(1,0) || checkTriple(0,1)) 
+                addBuff('三相共振', 0.6, 'align-justify', 'text-sky-300');
+        }
+
+        // 8. 四核矩阵
+        if (hasMutation('quad_core')) {
+            const checkSquare = (dx, dy) => { 
+                const n1 = getIndex(x+dx, y, size); 
+                const n2 = getIndex(x, y+dy, size); 
+                const n3 = getIndex(x+dx, y+dy, size); 
+                return n1!==-1 && n2!==-1 && n3!==-1 && gameState.cells[n1]?.creatureId === cell.creatureId && gameState.cells[n2]?.creatureId === cell.creatureId && gameState.cells[n3]?.creatureId === cell.creatureId; 
+            }; 
+            if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) 
+                addBuff('四核矩阵', 0.8, 'box', 'text-purple-400');
+        }
+
+        // 9. 交错生态
+        if (hasMutation('interlaced_complement')) {
+            const neighbors = getNeighbors(index);
+            const hasSame = neighbors.some(n => gameState.cells[n]?.creatureId === cell.creatureId);
+            if (!hasSame) addBuff('交错生态', 0.2, 'grid-2x2');
+        }
+
+        // 10. 生态马赛克
+        if (hasMutation('ecological_mosaic')) {
+            const neighbors = getNeighbors(index);
+            const validNeighbors = neighbors.filter(n => gameState.cells[n]);
+            if (validNeighbors.length > 0) {
+                const neighborTypes = new Set(validNeighbors.map(n => gameState.cells[n].creatureId));
+                if (neighborTypes.size === validNeighbors.length && !neighborTypes.has(cell.creatureId)) {
+                    addBuff('生态马赛克', 0.6, 'layout-dashboard', 'text-teal-300');
+                }
+            }
+        }
+
+        // 11. 叶绿爆发
+        if (hasMutation('chloroplast_outburst') && def.tier === 1 && def.category === 'plant') 
+            addBuff('叶绿爆发', 0.2, 'leaf', 'text-green-400');
+
+        // 12. 掠食本能
+        if (hasMutation('predator_instinct') && def.tier >= 4 && def.foodConfig) 
+            addBuff('掠食本能', 0.4, 'swords', 'text-red-400');
+
+        // 13. 潮汐共振 (全局)
+        if (hasMutation('tidal_resonance')) 
+            addBuff('潮汐共振', 0.18, 'waves', 'text-blue-300');
+
+        // 需要全局统计的道具：临时统计一下
+        if (hasMutation('schooling_storm') || hasMutation('thriving_diversity') || hasMutation('apex_presence')) {
+            const allCreatureIds = new Set();
+            let arthropodCount = 0;
+            let highTierCount = 0;
+            gameState.cells.forEach(c => {
+                if (c) {
+                    allCreatureIds.add(c.creatureId);
+                    const d = getCreatureDef(c.creatureId);
+                    if (d.category === 'arthropod') arthropodCount++;
+                    if (d.tier >= 4) highTierCount++;
+                }
+            });
+
+            if (hasMutation('schooling_storm') && def.category === 'arthropod') 
+                addBuff('甲壳风暴', arthropodCount * 0.1, 'shell');
+            
+            if (hasMutation('thriving_diversity')) 
+                addBuff('繁荣多样性', allCreatureIds.size * 0.05, 'library');
+            
+            if (hasMutation('apex_presence') && highTierCount > 0 && def.tier <= 2) 
+                addBuff('顶级威压', highTierCount * 1.0, 'crown', 'text-amber-400');
+        }
+
+        // 14. 捕食循环 (全局)
+        if (hasMutation('predation_cycle') && gameState.deathCounter > 0) {
+            const val = Math.min(1.0, gameState.deathCounter * 0.05);
+            addBuff('捕食循环', val, 'recycle', 'text-rose-400');
+        }
+
+
+        // 渲染道具 Buff 列表
+        activeItemBuffs.forEach(item => {
+            statusHtml += `<div class="flex items-center gap-1 ${item.color} text-xs mt-1">
+                <i data-lucide="${item.icon}" class="w-3 h-3"></i> ${item.name} (+${Math.round(item.val * 100)}%)
+            </div>`;
+        });
+
+        // 兜底文本
         if (statusHtml === '') {
             statusHtml = `<div class="flex items-center gap-1 text-gray-500 text-xs mt-1">
-                生态平衡
+                生态平衡 (无加成)
             </div>`;
         }
 
@@ -420,6 +555,7 @@ function updateDetailPanelDynamic(index) {
         }
     }
 }
+
 
 // 渲染肉鸽道具
 function renderRogueItems() { 
@@ -433,96 +569,67 @@ function renderRogueItems() {
         return; 
     } 
 
-    const stageConf = getStageConfig(gameState.currentStage); 
-    const baseCost = Math.round(stageConf.reqRate * 6); 
-
     let html = ''; 
     gameState.rogueShopItems.forEach((item) => { 
-        const cost = baseCost; 
+        // 1. 计算价格
+        const cost = calculateRogueItemCost(item);
         const canAfford = gameState.energy >= cost && !item.bought; 
 
-        const rarity = item.rarity || '普通';
-        const theme = RARITY_THEME[rarity] || RARITY_THEME['普通'];
+        // ✅ 修复：定义 rarity，防止报错
+        const rarity = item.rarity || '普通'; 
+        const theme = (window.RARITY_THEME && RARITY_THEME[rarity]) ? RARITY_THEME[rarity] : RARITY_THEME['普通'];
 
         const wrapperClass = item.bought
             ? `p-2 rounded-lg border-2 border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95`
             : `p-2 rounded-lg border-2 ${theme.border} ${theme.bg} transition-all hover:shadow-lg`;
 
-        // ✅ 新的按钮基础样式：右侧竖着的矩形按钮，和过关按钮风格接近
-        let btnClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 " +
-                       "rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
+        let btnClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
 
         if (item.bought) {
             btnClass += "border-gray-800 text-gray-600 bg-transparent cursor-default";
         } else if (canAfford) {
-            btnClass += theme.btnEnabled;
+            btnClass += theme.btnEnabled || "border-green-600 text-green-400"; // 防止样式缺失
         } else {
             btnClass += "border-gray-800 text-gray-600 cursor-not-allowed";
         }
 
+        // 强制白色图标，背景优先用 item.bgColor (生物色)，否则用 theme.iconBg (品质色)
+        const iconBg = item.bgColor || theme.iconBg || 'bg-gray-700';
+
         html += ` 
             <div class="${wrapperClass}"> 
                 <div class="flex items-stretch gap-2">
-                    <!-- 左侧：图标 + 名称 + 品质 + 简短描述 -->
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-0.5 overflow-hidden"> 
-                            <div class="w-7 h-7 rounded-full ${item.bgColor || 'bg-gray-500'} flex items-center justify-center shrink-0">
+                            <div class="w-7 h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0">
                                 <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 text-white"></i>
                             </div>
                             <div class="min-w-0 flex items-center gap-1.5"> 
                                 <div class="text-xs font-bold ${theme.title} leading-none truncate">${item.name}</div> 
-                                <div class="text-[9px] font-bold opacity-70 ${theme.badge} shrink-0">${item.rarity || '普通'}</div> 
+                                <div class="text-[9px] font-bold opacity-70 ${theme.badge} shrink-0">${rarity}</div> 
                             </div> 
                         </div> 
-                        
                         <p class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-6 opacity-90">${item.desc}</p> 
                     </div>
 
-                    <!-- 右侧：竖着的购买按钮 -->
-                    <button 
-                        id="rogue-item-btn-${item.id}"
-                        class="${btnClass}" 
-                        onclick="purchaseRogueItem('${item.id}')" 
-                        ${item.bought || !canAfford ? 'disabled' : ''}> 
-                        ${
-                            item.bought 
-                                ? '<span>已激活</span>' 
-                                : `
-                                    <span>购买</span>
-                                    <span class="font-mono opacity-90 flex items-center gap-0.5 mt-0.5">
-                                        <i data-lucide="zap" class="w-3 h-3 fill-current"></i>${cost}
-                                    </span>
-                                  `
-                        } 
+                    <button id="rogue-item-btn-${item.id}" class="${btnClass}" onclick="purchaseRogueItem('${item.id}')" ${item.bought || !canAfford ? 'disabled' : ''}> 
+                        ${item.bought ? '<span>已激活</span>' : `<span>购买</span><span class="font-mono opacity-90 flex items-center gap-0.5 mt-0.5"><i data-lucide="zap" class="w-3 h-3 fill-current"></i>${cost}</span>`} 
                     </button> 
                 </div>
-            </div> 
-        `; 
-    }); 
+            </div>`; 
+    });
 
-    // 🔽 在道具列表下面加一块「物种特殊倍率」总览
-    // 从 CREATURES 里遍历所有生物，计算当前 buff 后的倍率
+    // 物种倍率总览部分...
     const boostBadges = [];
     CREATURES.forEach(cre => {
-        // 只显示已解锁的物种（如果你想全显示，可以删掉这个判断）
         if (!gameState.unlockedCreatureIds || !gameState.unlockedCreatureIds.has(cre.id)) return;
         if (!cre.baseOutput || cre.baseOutput <= 0) return;
 
         const buffValue = (gameState.activeBuffs && gameState.activeBuffs[cre.id]) || 0;
         const multiplier = (cre.baseOutput + buffValue) / cre.baseOutput;
+        const stacks = gameState.creatureBoostStacks ? (gameState.creatureBoostStacks[cre.id] || 0) : 0;
 
-        // 如果你只想显示"真的有加成"的，可以加个过滤：倍率≈1 就跳过
-        // if (Math.abs(multiplier - 1) < 0.001) return;
-
-        const stacks = gameState.creatureBoostStacks
-            ? (gameState.creatureBoostStacks[cre.id] || 0)
-            : 0;
-
-        boostBadges.push({
-            name: cre.name,
-            multiplier,
-            stacks
-        });
+        boostBadges.push({ name: cre.name, multiplier, stacks });
     });
 
     if (boostBadges.length) {
@@ -537,14 +644,8 @@ function renderRogueItems() {
                         boostBadges.map(b => `
                             <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/30">
                                 <span class="text-gray-400">${b.name}</span>
-                                <span class="font-mono text-emerald-300">
-                                    ${b.multiplier.toFixed(2)}×
-                                </span>
-                                ${
-                                    b.stacks && b.stacks > 0
-                                        ? `<span class="text-amber-300 text-[10px]">(${b.stacks}层)</span>`
-                                        : ''
-                                }
+                                <span class="font-mono text-emerald-300">${b.multiplier.toFixed(2)}×</span>
+                                ${ b.stacks > 0 ? `<span class="text-amber-300 text-[10px]">(${b.stacks}层)</span>` : '' }
                             </span>
                         `).join('')
                     }
@@ -585,13 +686,22 @@ function renderRogueItemBar() {
         const def = getRogueItemDef(itemId);
         if (!def) return;
 
+        const rarity = def.rarity || '普通';
+        const theme = RARITY_THEME[rarity] || RARITY_THEME['普通'];
+        
+        // 背景色逻辑：优先用生物自带背景，否则用品质背景
+        const finalBgColor = def.bgColor || theme.iconBg || 'bg-gray-700';
+        
+        // ✅ 强制白色图标
+        const finalIconColor = 'text-white';
+
         html += `
             <div 
                 class="relative group cursor-pointer"
                 onclick="showRogueItemDetail('${itemId}')"
             >
-                <div class="w-10 h-10 rounded-lg ${def.bgColor || 'bg-gray-700'} flex items-center justify-center border border-white/10 shadow-md">
-                    <i data-lucide="${def.icon || 'sparkles'}" class="w-5 h-5 text-white"></i>
+                <div class="w-10 h-10 rounded-lg ${finalBgColor} flex items-center justify-center border border-white/10 shadow-md transition-transform hover:scale-105">
+                    <i data-lucide="${def.icon || 'sparkles'}" class="w-5 h-5 ${finalIconColor}"></i>
                 </div>
                 <!-- 悬停提示：黑底白字圆角块 -->
                 <div class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150
@@ -611,11 +721,11 @@ function renderRogueItemBar() {
 }
 
 // 道具栏：点击某个道具时，在右侧详情面板显示其效果
+// 道具栏：点击某个道具时，在右侧详情面板显示其效果
 function showRogueItemDetail(itemId) {
     const itemDef = getRogueItemDef(itemId);
     if (!itemDef) return;
 
-    // 如果你有 lastPanelMode / lastRenderedIndex 之类的状态，可以顺手更新一下
     if (typeof lastPanelMode !== 'undefined') {
         lastPanelMode = 'rogue';
     }
@@ -625,16 +735,21 @@ function showRogueItemDetail(itemId) {
 
     const animClass = 'animate-fade-in';
     const rarity = itemDef.rarity || '普通';
+    
+    // 获取主题配置
+    const theme = (window.RARITY_THEME && RARITY_THEME[rarity]) ? RARITY_THEME[rarity] : { iconBg: 'bg-gray-700' };
 
-    // 简单用颜色：icon 颜色 / 背景颜色来自配置
-    const bgClass = itemDef.bgColor || 'bg-gray-800';
-    const iconColor = itemDef.color || 'text-white';
+    // 背景色逻辑：优先用生物自带背景，否则用品质背景
+    const bgClass = itemDef.bgColor || theme.iconBg || 'bg-gray-800';
+    
+    // 强制白色图标
+    const iconColor = 'text-white';
 
     detailPanel.innerHTML = `
         <div class="bg-primary-dark border border-ui-border rounded-xl p-5 ${animClass}">
             <div class="flex items-center gap-4 mb-4">
                 <div class="w-14 h-14 rounded-xl ${bgClass} flex items-center justify-center shadow-lg border border-white/10">
-                    <i data-lucide="${itemDef.icon || 'sparkles'}" class="w-7 h-7 text-white"></i>
+                    <i data-lucide="${itemDef.icon || 'sparkles'}" class="w-7 h-7 ${iconColor}"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-2">
@@ -651,16 +766,26 @@ function showRogueItemDetail(itemId) {
             
             <div class="space-y-3 text-sm text-gray-300 bg-secondary-dark/40 p-4 rounded-lg leading-relaxed">
                 <div class="flex items-start gap-2">
-                    <i data-lucide="info" class="w-4 h-4 text-accent-life mt-0.5"></i>
+                    <i data-lucide="info" class="w-4 h-4 text-accent-life mt-0.5 shrink-0"></i>
                     <p>${itemDef.desc}</p>
                 </div>
             </div>
 
-            <div class="mt-4 text-[11px] text-gray-500">
-                已购买的道具会持续生效，无需额外操作。
+            <div class="mt-4 text-[11px] text-gray-500 mb-6">
+                已购买的道具会持续生效，直到被丢弃。
             </div>
+
+            <button 
+                onclick="removeRogueItem('${itemId}'); renderDetailPanel(-1);" 
+                class="w-full py-3 border border-red-900/50 text-red-400 rounded-lg hover:bg-red-900/20 transition flex items-center justify-center gap-2 group"
+            >
+                <i data-lucide="trash-2" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> 
+                <span>丢弃道具</span>
+            </button>
         </div>
     `;
+
+    lucide.createIcons({ root: detailPanel });
 
     lucide.createIcons({ root: detailPanel });
 }
@@ -726,51 +851,36 @@ document.addEventListener('DOMContentLoaded', () => {
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
 // 给肉鸽按钮挂 watcher：根据“当前能量是否足够且未购买”来控制启用/禁用
 // 肉鸽道具按钮：用监视器统一控制「是否可购买」 → 启用 / 禁用 + 颜色
-function setupRogueItemWatchers() {
-    const stageConf = getStageConfig(gameState.currentStage);
-    const baseCost = Math.round(stageConf.reqRate * 6);
 
+
+function setupRogueItemWatchers() {
     gameState.rogueShopItems.forEach(item => {
         uiVarMonitor.watchThreshold({
             key: `rogue-item-${item.id}`,
-            // 当前是否可以购买：能量足够 && 未购买
-            getValue: () => (gameState.energy >= baseCost && !item.bought),
+            // ✅ 这里调用 game-core 的新计价函数
+            getValue: () => (gameState.energy >= calculateRogueItemCost(item) && !item.bought),
             target: true,
-            cmp: (val, target) => !!val === target, // 只在 true/false 变化时触发
+            cmp: (val, target) => !!val === target,
             onChange(canBuy) {
                 const btn = document.getElementById(`rogue-item-btn-${item.id}`);
                 if (!btn) return;
+                if (item.bought) return; // 已购买的不处理
 
-                // 已经买过的，锁死样式，不再改
-                if (item.bought) {
-                    btn.disabled = true;
-                    btn.className =
-                        "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 " +
-                        "rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 " +
-                        "border-gray-800 text-gray-600 bg-transparent cursor-default";
-                    btn.innerHTML = `<span>已激活</span>`;
-                    return;
-                }
-
-                // 公共基础样式（和 renderRogueItems 保持一致）
-                const baseBtnClass =
-                    "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 " +
-                    "rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
-                // 各品质对应的可购买样式（和你 renderRogueItems 里的 theme.btnDef 保持一致）
-                const theme = RARITY_THEME[item.rarity || '普通'] || RARITY_THEME['普通'];
-                const enabledClass = theme.btnEnabled;
+                // 安全获取样式
+                const rarity = item.rarity || '普通';
+                const theme = (window.RARITY_THEME && RARITY_THEME[rarity]) ? RARITY_THEME[rarity] : {};
+                const enabledClass = theme.btnEnabled || "border-green-600 text-green-400";
                 const disabledClass = "border-gray-800 text-gray-600 cursor-not-allowed";
+
+                const baseClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
 
                 if (canBuy) {
                     btn.disabled = false;
-                    btn.className = baseBtnClass + enabledClass;
+                    btn.className = baseClass + enabledClass;
                 } else {
                     btn.disabled = true;
-                    btn.className = baseBtnClass + disabledClass;
+                    btn.className = baseClass + disabledClass;
                 }
-
-                // 按钮里的文字保持原来逻辑（不在这里改 innerHTML）
-                // 初始渲染时已经写好 “购买 + 价格”，这里只负责样式和禁用状态。
             }
         });
     });

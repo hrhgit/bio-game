@@ -14,6 +14,7 @@ let gameState = {
     rogueShopItems: [],
     rogueItemBar: [],          // 道具栏里的道具 id
     creatureBoostStacks: {},    // { [creatureId]: number } 记录各生物被强化了几次
+    deathCounter: 0,           // 新增：用于记录本关死亡单位数量
     // ✅ 已解锁的生物 id：基础生产者默认解锁
     unlockedCreatureIds: new Set(['algae', 'kelp'])
 };
@@ -278,6 +279,10 @@ function enterStage(stage) {
 
     // 7. 刷新一次动态文本部分
     updateStagePanelDynamic();
+
+    // 8. ✅ 新增：刷新右侧面板
+    // 作用：如果当前正好选中了空格子，立刻刷新建造列表，显示刚解锁的新生物
+    renderDetailPanel(gameState.selectedCellIndex);
 }
 
 // 按稀有度权重，从"未在道具栏内的道具"里抽取本轮商店道具
@@ -339,75 +344,53 @@ function rollRogueShop() {
 }
 
 
-function purchaseRogueItem(itemId) {
-    const conf = getStageConfig(gameState.currentStage);
-    const baseCost = Math.round(conf.reqRate * 6);
 
+function purchaseRogueItem(itemId) {
     const item = gameState.rogueShopItems.find(it => it.id === itemId);
     if (!item || item.bought) return;
 
-    const isCreatureBoost = item.kind === 'creature_boost' && item.stackable;
+    // ✅ 使用统一计价函数 (包含生物强化涨价逻辑)
+    const cost = calculateRogueItemCost(item);
 
     // 能量不足
-    if (gameState.energy < baseCost) {
+    if (gameState.energy < cost) {
         SoundSystem.playError && SoundSystem.playError();
         return;
     }
 
     // 扣费
-    updateEnergy(-baseCost);
+    updateEnergy(-cost);
 
-    // 标记本轮"已购买"，按钮要灰掉 —— 两种道具都一样
+    // 标记购买
     item.bought = true;
 
-    if (isCreatureBoost) {
-        // ✅【新类型】针对某个生物叠加 +10% 产出
+    // 生物强化道具逻辑
+    if (item.kind === 'creature_boost' && item.stackable) {
         const creatureId = item.targetCreatureId;
         const def = getCreatureDef(creatureId);
-
         if (def) {
             const inc = def.baseOutput * 0.10;
+            gameState.activeBuffs[creatureId] = (gameState.activeBuffs[creatureId] || 0) + inc;
 
-            // 实际数值叠加：叠在 activeBuffs 上，handleProduction 已经用这个算
-            gameState.activeBuffs[creatureId] =
-                (gameState.activeBuffs[creatureId] || 0) + inc;
-
-            // 层数记录（仅用于 UI 展示）
-            if (!gameState.creatureBoostStacks) {
-                gameState.creatureBoostStacks = {};
-            }
-            gameState.creatureBoostStacks[creatureId] =
-                (gameState.creatureBoostStacks[creatureId] || 0) + 1;
+            if (!gameState.creatureBoostStacks) gameState.creatureBoostStacks = {};
+            gameState.creatureBoostStacks[creatureId] = (gameState.creatureBoostStacks[creatureId] || 0) + 1;
         }
-
         SoundSystem.playUpgrade && SoundSystem.playUpgrade();
-
-        // 不进道具栏，其它逻辑不变
     } else {
-        // ✅【原来的普通道具逻辑】—— 不变
-        // 道具栏上限判断
-        if (!gameState.rogueItemBar) {
-            gameState.rogueItemBar = [];
-        }
+        // 普通道具逻辑
+        if (!gameState.rogueItemBar) gameState.rogueItemBar = [];
         if (!gameState.rogueItemBar.includes(itemId)) {
-            // 如果你有上限判断（比如 >=5 就 return）可以保留
-            if (gameState.rogueItemBar.length >= MAX_ROGUE_ITEM_BAR) {
-                // 按你之前的设定：栏位满了就不响应
-                return;
-            }
+            if (gameState.rogueItemBar.length >= MAX_ROGUE_ITEM_BAR) return;
             gameState.rogueItemBar.push(itemId);
         }
-
         if (item.mutationId && gameState.activeMutations) {
             gameState.activeMutations.add(item.mutationId);
         }
-
         SoundSystem.playUpgrade && SoundSystem.playUpgrade();
     }
 
-    // ✅ 立即刷新商店列表（按钮变“已激活”）
+    // 刷新 UI
     renderRogueItems();
-    // ✅ 立即刷新道具栏（立刻看到新图标）
     renderRogueItemBar();
 }
 
@@ -477,22 +460,70 @@ function checkLayoutBuffs(idx, creatureId, size, cells) {
     let patternBuff = 0;
     const { x, y } = getXY(idx, size);
     
+    // 1. 深海高压 (Abyssal Pressure)
+    if (hasMutation('abyssal_pressure') && y === size - 1) patternBuff += 0.2;
+
+    // 2. 表层光合 (Surface Bloom)
+    if (hasMutation('surface_bloom') && y === 0) {
+        if (getCreatureDef(creatureId).category === 'plant') patternBuff += 0.3;
+    }
+
+    // 3. 四角基石 (Cornerstones)
+    if (hasMutation('cornerstones')) {
+        const isCorner = (x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1);
+        if (isCorner) patternBuff += 0.4;
+    }
+    
+    // 4. 先锋群落 (Pioneer Swarm)
+    if (hasMutation('pioneer_swarm')) {
+        if (x===0 || x===size-1 || y===0 || y===size-1) patternBuff += 0.2;
+    }
+
+    // 5. 中央意识核 (Central Dogma) - 判定正中心
+    if (hasMutation('central_dogma')) {
+        const center = (size - 1) / 2;
+        // 如果 size 是奇数，正中心就是一个点；偶数没有正中心，这里取最接近中心的点
+        if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) patternBuff += 2.0;
+    }
+
+    // 6. 急速代谢 (Hyper Metabolism) - 复杂的排序检测
+    // 逻辑：检测当前生物所在的【行】和【列】是否构成"低级到高级"的序列
+    if (hasMutation('hyper_metabolism')) {
+        const checkLine = (isRow) => {
+            let sequence = [];
+            for (let k = 0; k < size; k++) {
+                const cIdx = isRow ? getIndex(k, y, size) : getIndex(x, k, size);
+                const c = cells[cIdx];
+                if (c) sequence.push(getCreatureDef(c.creatureId).tier);
+            }
+            // 只有当序列长度 >= 2 且严格单调递增时触发
+            if (sequence.length < 2) return false;
+            for (let i = 0; i < sequence.length - 1; i++) {
+                if (sequence[i] >= sequence[i+1]) return false;
+            }
+            return sequence.length; // 返回序列长度作为倍率因子
+        };
+
+        const rowLen = checkLine(true); // 检查行
+        const colLen = checkLine(false); // 检查列
+        
+        // 如果行符合，加成 = 20% * 数量
+        if (rowLen) patternBuff += 0.2 * rowLen;
+        // 如果列符合，叠加加成
+        if (colLen) patternBuff += 0.2 * colLen;
+    }
+
+    // 7. 三相共振 (Triplet Resonance)
     if (hasMutation('triplet_resonance')) {
-        const left = getIndex(x-1, y, size); 
-        const right = getIndex(x+1, y, size); 
-        const up = getIndex(x, y-1, size); 
-        const down = getIndex(x, y+1, size); 
-        const isHorz = left!==-1 && right!==-1 && cells[left]?.creatureId === creatureId && cells[right]?.creatureId === creatureId; 
-        const isVert = up!==-1 && down!==-1 && cells[up]?.creatureId === creatureId && cells[down]?.creatureId === creatureId; 
-        if (isHorz || isVert) patternBuff += 0.5; 
+        const checkTriple = (dx, dy) => {
+            const n1 = getIndex(x-dx, y-dy, size);
+            const n2 = getIndex(x+dx, y+dy, size);
+            return n1!==-1 && n2!==-1 && cells[n1]?.creatureId===creatureId && cells[n2]?.creatureId===creatureId;
+        };
+        if (checkTriple(1,0) || checkTriple(0,1)) patternBuff += 0.6; // 左右 或 上下
     }
-    
-    if (hasMutation('interlaced_complement')) {
-        const neighbors = getNeighbors(idx); 
-        const hasSameNeighbor = neighbors.some(nIdx => cells[nIdx]?.creatureId === creatureId); 
-        if (!hasSameNeighbor) patternBuff += 0.4; 
-    }
-    
+
+    // 8. 四核矩阵 (Quad Core)
     if (hasMutation('quad_core')) {
         const checkSquare = (dx, dy) => { 
             const n1 = getIndex(x+dx, y, size); 
@@ -500,110 +531,172 @@ function checkLayoutBuffs(idx, creatureId, size, cells) {
             const n3 = getIndex(x+dx, y+dy, size); 
             return n1!==-1 && n2!==-1 && n3!==-1 && cells[n1]?.creatureId === creatureId && cells[n2]?.creatureId === creatureId && cells[n3]?.creatureId === creatureId; 
         }; 
-        if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) patternBuff += 0.8; 
+        if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) patternBuff += 0.8;
     }
     
-    if (hasMutation('edge_effect')) { 
-        if (x === 0 || x === size-1 || y === 0 || y === size-1) patternBuff += 0.25; 
+    // 9. 交错生态 (Interlaced Complement)
+    if (hasMutation('interlaced_complement')) {
+        const neighbors = getNeighbors(idx);
+        // 四周只要有一个同类，就不触发
+        const hasSame = neighbors.some(n => cells[n]?.creatureId === creatureId);
+        if (!hasSame) patternBuff += 0.2;
     }
     
-    if (hasMutation('central_dogma') && size >= 3) { 
-        const centerStart = Math.floor((size - 3) / 2); 
-        const centerEnd = centerStart + 3; 
-        if (x >= centerStart && x < centerEnd && y >= centerStart && y < centerEnd) patternBuff += 1.0; 
+    // 10. 生态马赛克 (Ecological Mosaic)
+    if (hasMutation('ecological_mosaic')) {
+        const neighbors = getNeighbors(idx);
+        const validNeighbors = neighbors.filter(n => cells[n]); // 只看有生物的格子
+        if (validNeighbors.length > 0) {
+            // 收集邻居种类集合
+            const neighborTypes = new Set(validNeighbors.map(n => cells[n].creatureId));
+            // 如果种类数量 == 邻居数量，且都不等于自己 (全不同)
+            if (neighborTypes.size === validNeighbors.length && !neighborTypes.has(creatureId)) {
+                patternBuff += 0.6;
+            }
+        }
     }
-    
+
     return patternBuff;
 }
 
 // 生态影响计算
 function calculateEcologicalImpacts() {
-    const impacts = gameState.cells.map(() => ({ 
-        speedMultiplier: 1.0, 
-        isStarving: false, 
-        buffs: 0, 
-        debuffs: 0, 
-        symbiosis: 0, 
-        competition: 0, 
-        mutationBuffs: 0 
-    }));
+    // 1. 预计算全局数据
+    const allCreatureIds = new Set();
+    let arthropodCount = 0; // 甲壳数量
+    let highTierCount = 0;  // T4/T5 数量
+
+    gameState.cells.forEach(c => {
+        if (c) {
+            allCreatureIds.add(c.creatureId);
+            const def = getCreatureDef(c.creatureId);
+            if (def.category === 'arthropod') arthropodCount++;
+            if (def.tier >= 4) highTierCount++;
+        }
+    });
     
+    // 捕食循环加成 (全局)
+    let deathSpeedBonus = 0;
+    if (hasMutation('predation_cycle')) {
+        deathSpeedBonus = Math.min(1.0, (gameState.deathCounter || 0) * 0.05);
+    }
+    
+    // 潮汐共振 (全局)
+    let tidalBonus = hasMutation('tidal_resonance') ? 0.18 : 0;
+
+    // 2. 遍历计算
+    const impacts = gameState.cells.map(() => ({ speedMultiplier: 1.0 + deathSpeedBonus + tidalBonus, buffs: 0, debuffs: 0, symbiosis: 0, competition: 0, mutationBuffs: 0, isStarving: false }));
     const predatorCountsOnFood = new Array(gameState.cells.length).fill(0);
+
+    // ... (保留原有的捕食压力计算，注意如果 fractal_grid 开启，这里 getNeighbors 要改) ...
+    // 这里简单处理：如果 fractal_grid 开启，修改 getNeighbors 的逻辑比较危险，不如在这里局部判断
     
-    // 计算捕食压力
     gameState.cells.forEach((cell, idx) => {
         if (!cell) return;
         const def = getCreatureDef(cell.creatureId);
+        
+        // 确定搜索范围：普通邻居 or 分形网格(含对角)
+        let searchIndices = getNeighbors(idx);
+        if (hasMutation('fractal_grid')) {
+            searchIndices = [...searchIndices, ...getDiagonalNeighbors(idx)];
+        }
+        
+        // 计算被捕食次数 (修正原逻辑以支持分形网格)
         if (def.foodConfig) {
-            const neighbors = getNeighbors(idx);
-            neighbors.forEach(nIdx => {
+            searchIndices.forEach(nIdx => {
                 const nCell = gameState.cells[nIdx];
-                if (nCell && def.foodConfig.targets.includes(nCell.creatureId)) { 
-                    predatorCountsOnFood[nIdx]++; 
+                // 如果邻居是我的猎物，那我对邻居造成压力 (predatorCountsOnFood 记录的是邻居被多少生物吃)
+                // 这里原逻辑反了？原逻辑：def.foodConfig.targets.includes(nCell) -> 意味着 nCell 是食物
+                if (nCell && def.foodConfig.targets.includes(nCell.creatureId)) {
+                    predatorCountsOnFood[nIdx]++;
                 }
             });
         }
     });
-    
-    // 计算每个格子的影响
+
     gameState.cells.forEach((cell, idx) => {
         if (!cell) return;
         const def = getCreatureDef(cell.creatureId);
-        const neighbors = getNeighbors(idx);
         
-        // 关系影响
+        // 搜索范围
+        let searchIndices = getNeighbors(idx);
+        if (hasMutation('fractal_grid')) {
+            searchIndices = [...searchIndices, ...getDiagonalNeighbors(idx)];
+        }
+
+        // --- 关系计算 (共生/竞争) ---
         if (def.relations) {
-            let searchIndices = neighbors;
-            if (hasMutation('quantum_link')) { 
-                searchIndices = [...neighbors, ...getDiagonalNeighbors(idx)]; 
-            }
-            
             def.relations.forEach(rel => {
-                const targetIndices = searchIndices.filter(nIdx => { 
-                    const nCell = gameState.cells[nIdx]; 
-                    return nCell && nCell.creatureId === rel.target; 
+                const targetIndices = searchIndices.filter(nIdx => {
+                    const nCell = gameState.cells[nIdx];
+                    return nCell && nCell.creatureId === rel.target;
                 });
-                
                 if (targetIndices.length > 0) {
-                    if (rel.val < 0 && hasMutation('peace_treaty')) return;
+                    if (rel.val < 0 && hasMutation('peace_treaty')) return; // 宁静条约
                     
                     let finalVal = rel.val;
-                    if (rel.val > 0 && hasMutation('hyper_symbiosis')) finalVal *= 2;
                     
-                    const effectValue = targetIndices.length * finalVal;
-                    if (finalVal > 0) impacts[idx].symbiosis += effectValue; 
-                    else impacts[idx].competition += effectValue;
+                    // 互利契约 (Mutualism Contract) & 超共生 (Hyper Symbiosis)
+                    if (rel.val > 0) {
+                        if (hasMutation('hyper_symbiosis')) finalVal *= 2;
+                        if (hasMutation('mutualism_contract')) finalVal *= 2;
+                    } else {
+                        if (hasMutation('mutualism_contract')) finalVal *= 2;
+                    }
+
+                    const effect = targetIndices.length * finalVal;
+                    if (finalVal > 0) impacts[idx].symbiosis += effect;
+                    else impacts[idx].competition += effect;
                     
-                    impacts[idx].speedMultiplier += effectValue;
+                    impacts[idx].speedMultiplier += effect;
                 }
             });
         }
         
-        // 布局加成
+        // --- 布局和类别加成 ---
         const layoutBuff = checkLayoutBuffs(idx, cell.creatureId, gameState.gridSize, gameState.cells);
-        if (layoutBuff > 0) { 
-            impacts[idx].mutationBuffs += layoutBuff; 
-            impacts[idx].speedMultiplier += layoutBuff; 
+        impacts[idx].mutationBuffs += layoutBuff;
+        impacts[idx].speedMultiplier += layoutBuff;
+        
+        // 甲壳风暴
+        if (hasMutation('schooling_storm') && def.category === 'arthropod') {
+            const bonus = arthropodCount * 0.1;
+            impacts[idx].mutationBuffs += bonus;
+            impacts[idx].speedMultiplier += bonus;
+        }
+
+        // 繁荣多样性
+        if (hasMutation('thriving_diversity')) {
+            const bonus = allCreatureIds.size * 0.05;
+            impacts[idx].mutationBuffs += bonus;
+            impacts[idx].speedMultiplier += bonus;
+        }
+
+        // 顶级威压
+        if (hasMutation('apex_presence') && highTierCount > 0 && def.tier <= 2) {
+            const bonus = highTierCount * 1.0;
+            impacts[idx].mutationBuffs += bonus;
+            impacts[idx].speedMultiplier += bonus;
+        }
+
+        // 掠食本能
+        if (hasMutation('predator_instinct') && def.tier >= 4 && def.foodConfig) {
+             impacts[idx].speedMultiplier += 0.4;
         }
         
-        // 特定生物加成
-        if (hasMutation('chloroplast_outburst') && def.tier === 1) { 
-            impacts[idx].mutationBuffs += 0.3; 
-            impacts[idx].speedMultiplier += 0.3; 
+        // 叶绿爆发
+        if (hasMutation('chloroplast_outburst') && def.tier === 1 && def.category === 'plant') {
+             impacts[idx].speedMultiplier += 0.2;
         }
-        
-        if (hasMutation('predator_instinct') && def.tier >= 4) { 
-            impacts[idx].mutationBuffs += 0.2; 
-            impacts[idx].speedMultiplier += 0.2; 
-        }
-        
-        // 食物配置影响
+
+        // --- 进食计算 ---
         if (def.foodConfig) {
-            const validFoodIndices = neighbors.filter(nIdx => { 
+            const validFoodIndices = searchIndices.filter(nIdx => { 
                 const nCell = gameState.cells[nIdx]; 
                 return nCell && def.foodConfig.targets.includes(nCell.creatureId); 
             });
-            
+
+            // 饥饿判定
             let isStarving = false;
             if (def.foodConfig.mode === 'AND') {
                 const eatenTypes = new Set(validFoodIndices.map(i => gameState.cells[i].creatureId));
@@ -611,31 +704,33 @@ function calculateEcologicalImpacts() {
             } else { 
                 isStarving = validFoodIndices.length === 0; 
             }
-            
-            if (isStarving) { 
-                impacts[idx].isStarving = true; 
+
+            if (isStarving) {
+                impacts[idx].isStarving = true;
                 impacts[idx].speedMultiplier = 0; 
             } else {
                 let myFoodShare = 0;
                 validFoodIndices.forEach(fIdx => { 
-                    const eaters = predatorCountsOnFood[fIdx]; 
+                    const eaters = predatorCountsOnFood[fIdx] || 1; 
                     myFoodShare += (1 / eaters); 
                 });
                 
                 if (myFoodShare > 1.0) {
                     const surplus = myFoodShare - 1.0;
-                    const surplusRate = hasMutation('greedy_digestion') ? 0.45 : 0.3;
-                    const extraBuff = surplus * surplusRate; 
-                    impacts[idx].buffs += extraBuff; 
-                    impacts[idx].speedMultiplier += extraBuff;
+                    // 暴食胃袋逻辑
+                    const rate = hasMutation('gluttony') ? 0.6 : 0.3; 
+                    const extra = surplus * rate;
+                    impacts[idx].buffs += extra;
+                    impacts[idx].speedMultiplier += extra;
                 }
             }
             
+            // 施加捕食 Debuff
             if (validFoodIndices.length > 0) {
-                const pressurePerFood = def.consumptionImpact / validFoodIndices.length;
+                const pressure = def.consumptionImpact / validFoodIndices.length;
                 validFoodIndices.forEach(fIdx => { 
-                    impacts[fIdx].debuffs += pressurePerFood; 
-                    impacts[fIdx].speedMultiplier -= pressurePerFood; 
+                    impacts[fIdx].debuffs += pressure; 
+                    impacts[fIdx].speedMultiplier -= pressure; 
                 });
             }
         }
@@ -659,12 +754,14 @@ function gameLoop() {
         if (!cell) return;
         const def = getCreatureDef(cell.creatureId);
         const impact = impacts[idx];
-        
+
         cell.speedMultiplier = impact.speedMultiplier;
         cell.buffs = impact.buffs;
         cell.debuffs = impact.debuffs;
         cell.symbiosis = impact.symbiosis;
         cell.competition = impact.competition;
+
+        cell.mutationBuffs = impact.mutationBuffs;
         
         if (impact.isStarving || cell.speedMultiplier <= 0) { 
             cell.state = 'dying'; 
@@ -781,6 +878,10 @@ function killCreature(idx) {
     SoundSystem.playRemove();
     const cell = gameState.cells[idx];
     if(!cell) return;
+    
+    // 核心修改：增加死亡计数
+    gameState.deathCounter = (gameState.deathCounter || 0) + 1;
+    
     gameState.cells[idx] = null;
     const cellEl = document.getElementById(`cell-container-${idx}`);
     if (cellEl) {
@@ -885,3 +986,22 @@ window.debugAddMutation = (id) => {
     gameState.activeMutations.add(id);
     if(gameState.selectedCellIndex !== -1) renderDetailPanel(gameState.selectedCellIndex, false);
 };
+// game-core.js
+
+// 统一的价格计算函数
+function calculateRogueItemCost(item) {
+    // 1. 基础价格
+    const conf = getStageConfig(gameState.currentStage);
+    const baseCost = Math.round(conf.reqRate * 6);
+
+    // 2. 只有“生物强化道具”才应用特殊的增长倍率
+    if (item.kind === 'creature_boost' && item.stackable && item.targetCreatureId) {
+        const stacks = (gameState.creatureBoostStacks && gameState.creatureBoostStacks[item.targetCreatureId]) || 0;
+        const growthRate = window.BOOST_ITEM_COST_GROWTH || 1.5;
+        // 基础价 * (1.5 ^ 层数)
+        return Math.round(baseCost * Math.pow(growthRate, stacks));
+    }
+
+    // 普通道具：直接返回基础价格 (不乘稀有度，符合你的要求)
+    return baseCost;
+}
