@@ -992,7 +992,7 @@ window.debugAddMutation = (id) => {
 function calculateRogueItemCost(item) {
     // 1. 基础价格
     const conf = getStageConfig(gameState.currentStage);
-    const baseCost = Math.round(conf.reqRate * 6);
+    const baseCost = Math.round(conf.reqRate * 5);
 
     // 2. 只有“生物强化道具”才应用特殊的增长倍率
     if (item.kind === 'creature_boost' && item.stackable && item.targetCreatureId) {

@@ -88,56 +88,167 @@ function renderGrid() {
 // 更新单元格视觉效果
 
 
+
+// 更新单元格视觉效果 (性能优化版)
 function updateCellVisuals(idx, cellData) {
     const visualEl = document.getElementById(`cell-visual-${idx}`);
+    const progressEl = document.getElementById(`cell-progress-${idx}`);
+    const levelEl = document.getElementById(`cell-level-${idx}`);
+    const overlayEl = document.getElementById(`cell-overlay-${idx}`);
     const rateEl = document.getElementById(`cell-rate-${idx}`);
+    const iconWrapper = visualEl?.querySelector('.icon-wrapper');
+
     if (!visualEl || !cellData) return;
 
-    // ... (保留原本的进度条、等级、濒死状态代码) ...
-    // ... 这里只写图标生成的核心逻辑 ...
+    // 1. 更新进度条 (这个必须每帧更新，消耗很小)
+    if (progressEl) {
+        progressEl.style.height = `${cellData.progress}%`;
+    }
 
+    // 2. 更新等级文本 (纯文本更新，消耗小)
+    if (levelEl) {
+        const def = getCreatureDef(cellData.creatureId);
+        const isMax = cellData.level >= def.maxLevel;
+        // 只有文本变了才更新 DOM，防止微小抖动
+        const newText = `LV.${cellData.level}${isMax ? ' MAX' : ''}`;
+        if (levelEl.innerText !== newText) {
+            levelEl.innerText = newText;
+            levelEl.className = `text-[10px] ${isMax ? 'text-accent-gold font-normal' : 'text-white/90 font-normal'}`;
+        }
+        
+        if (isMax) {
+            if (!visualEl.classList.contains('max-level-border')) {
+                visualEl.classList.remove(def.borderColor);
+                visualEl.classList.add('max-level-border');
+            }
+        }
+    }
+
+    // 3. 状态特效 (通过 classList 切换，消耗可控)
+    if (cellData.state === 'dying') {
+        if (!visualEl.classList.contains('dying-state')) {
+            visualEl.classList.add('dying-state');
+            overlayEl.className = 'absolute inset-0 z-0 pointer-events-none dying-overlay opacity-100';
+            iconWrapper.classList.add('animate-shake');
+        }
+    } else {
+        if (visualEl.classList.contains('dying-state')) {
+            visualEl.classList.remove('dying-state');
+            overlayEl.className = 'absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 opacity-0';
+            iconWrapper.classList.remove('animate-shake');
+        }
+    }
+
+    // 4. ✅ 核心优化：图标生成逻辑
+    // 只有当图标字符串发生变化时，才执行耗时的 innerHTML 和 lucide 操作
+    
     let iconsHtml = '';
 
-    if (cellData.state !== 'dying') {
-        // 1. 速度箭头
+
+    if (cellData.state === 'dying') {
+        iconsHtml += `<span class="text-red-500 text-xs font-bold">!</span>`;
+    } else {
         if (cellData.speedMultiplier > 1.0) iconsHtml += `<span class="text-green-400 text-xs">▲</span>`;
         else if (cellData.speedMultiplier < 1.0) iconsHtml += `<span class="text-red-400 text-xs">▼</span>`;
 
-        // 2. 基础 Buff (食物/共生)
         if (cellData.buffs > 0) iconsHtml += `<i data-lucide="utensils" class="w-3 h-3 text-green-400"></i>`;
         if (cellData.symbiosis > 0) iconsHtml += `<i data-lucide="heart-handshake" class="w-3 h-3 text-cyan-400"></i>`;
 
-        // 3. ✅ 肉鸽道具图标 (放在这里！共生之后，竞争之前)
+        
+
+        if (cellData.debuffs > 0) iconsHtml += `<i data-lucide="bone" class="w-3 h-3 text-yellow-500"></i>`;
+        if (cellData.competition < 0) iconsHtml += `<i data-lucide="users" class="w-3 h-3 text-purple-400"></i>`;
         if (cellData.mutationBuffs > 0) {
             const def = getCreatureDef(cellData.creatureId);
             const { x, y } = getXY(idx, gameState.gridSize);
             const size = gameState.gridSize;
 
-            // 示例：深海高压
-            if (hasMutation('abyssal_pressure') && y === size - 1) 
-                iconsHtml += `<i data-lucide="arrow-down-to-line" class="w-3 h-3 text-blue-300"></i>`;
+            if (hasMutation('abyssal_pressure') && y === size - 1) iconsHtml += `<i data-lucide="arrow-down-to-line" class="w-3 h-3 text-blue-300"></i>`;
+            if (hasMutation('surface_bloom') && y === 0 && def.category === 'plant') iconsHtml += `<i data-lucide="sun" class="w-3 h-3 text-yellow-300"></i>`;
+            if (hasMutation('cornerstones') && ((x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1))) iconsHtml += `<i data-lucide="move-diagonal" class="w-3 h-3 text-gray-300"></i>`;
+            if (hasMutation('pioneer_swarm') && (x===0 || x===size-1 || y===0 || y===size-1)) iconsHtml += `<i data-lucide="maximize" class="w-3 h-3 text-cyan-300"></i>`;
+            
+            if (hasMutation('central_dogma')) {
+                const center = (size - 1) / 2;
+                if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) iconsHtml += `<i data-lucide="target" class="w-3 h-3 text-fuchsia-400"></i>`;
+            }
 
-            // ... (把所有道具判断逻辑放在这里，参考之前的代码) ...
-            // 示例：四角基石
-            if (hasMutation('cornerstones') && ((x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1)))
-                iconsHtml += `<i data-lucide="move-diagonal" class="w-3 h-3 text-gray-300"></i>`;
+            if (hasMutation('hyper_metabolism')) {
+                const checkLine = (isRow) => {
+                    let sequence = [];
+                    for (let k = 0; k < size; k++) {
+                        const cIdx = isRow ? getIndex(k, y, size) : getIndex(x, k, size);
+                        const c = gameState.cells[cIdx];
+                        if (c) sequence.push(getCreatureDef(c.creatureId).tier);
+                    }
+                    if (sequence.length < 2) return false;
+                    for (let i = 0; i < sequence.length - 1; i++) {
+                        if (sequence[i] >= sequence[i+1]) return false;
+                    }
+                    return true;
+                };
+                if (checkLine(true) || checkLine(false)) iconsHtml += `<i data-lucide="trending-up" class="w-3 h-3 text-amber-400"></i>`;
+            }
+
+            if (hasMutation('triplet_resonance')) {
+                 const checkTriple = (dx, dy) => {
+                    const n1 = getIndex(x-dx, y-dy, size);
+                    const n2 = getIndex(x+dx, y+dy, size);
+                    return n1!==-1 && n2!==-1 && gameState.cells[n1]?.creatureId===cellData.creatureId && gameState.cells[n2]?.creatureId===cellData.creatureId;
+                };
+                if (checkTriple(1,0) || checkTriple(0,1)) iconsHtml += `<i data-lucide="align-justify" class="w-3 h-3 text-sky-300"></i>`;
+            }
+
+            if (hasMutation('quad_core')) {
+                const checkSquare = (dx, dy) => { 
+                    const n1 = getIndex(x+dx, y, size); 
+                    const n2 = getIndex(x, y+dy, size); 
+                    const n3 = getIndex(x+dx, y+dy, size); 
+                    return n1!==-1 && n2!==-1 && n3!==-1 && gameState.cells[n1]?.creatureId === cellData.creatureId && gameState.cells[n2]?.creatureId === cellData.creatureId && gameState.cells[n3]?.creatureId === cellData.creatureId; 
+                }; 
+                if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) iconsHtml += `<i data-lucide="box" class="w-3 h-3 text-purple-400"></i>`;
+            }
+            
+            if (hasMutation('interlaced_complement')) {
+                const neighbors = getNeighbors(idx);
+                const hasSame = neighbors.some(n => gameState.cells[n]?.creatureId === cellData.creatureId);
+                if (!hasSame) iconsHtml += `<i data-lucide="grid-2x2" class="w-3 h-3 text-emerald-400"></i>`;
+            }
+
+            if (hasMutation('ecological_mosaic')) {
+                const neighbors = getNeighbors(idx);
+                const validNeighbors = neighbors.filter(n => gameState.cells[n]);
+                if (validNeighbors.length > 0) {
+                    const neighborTypes = new Set(validNeighbors.map(n => gameState.cells[n].creatureId));
+                    if (neighborTypes.size === validNeighbors.length && !neighborTypes.has(cellData.creatureId)) {
+                        iconsHtml += `<i data-lucide="layout-dashboard" class="w-3 h-3 text-teal-300"></i>`;
+                    }
+                }
+            }
+
+            if (hasMutation('chloroplast_outburst') && def.tier === 1 && def.category === 'plant') iconsHtml += `<i data-lucide="leaf" class="w-3 h-3 text-green-400"></i>`;
+            if (hasMutation('predator_instinct') && def.tier >= 4 && def.foodConfig) iconsHtml += `<i data-lucide="swords" class="w-3 h-3 text-red-400"></i>`;
+            if (hasMutation('schooling_storm') && def.category === 'arthropod') iconsHtml += `<i data-lucide="shell" class="w-3 h-3 text-orange-300"></i>`;
+            if (hasMutation('apex_presence') && def.tier <= 2) iconsHtml += `<i data-lucide="crown" class="w-3 h-3 text-amber-400"></i>`;
         }
-
-        // 4. 基础 Debuff
-        if (cellData.debuffs > 0) iconsHtml += `<i data-lucide="bone" class="w-3 h-3 text-yellow-500"></i>`;
-        if (cellData.competition < 0) iconsHtml += `<i data-lucide="users" class="w-3 h-3 text-purple-400"></i>`;
     }
 
-    // 渲染
-    if (rateEl) {
+    // ✅ 关键优化点：对比缓存字符串
+    // 我们把上一次渲染的 HTML 存在 data-last-html 属性里
+    const lastHtml = rateEl.getAttribute('data-last-html');
+
+    if (lastHtml !== iconsHtml) {
         if (iconsHtml) {
             rateEl.className = "absolute top-1 right-1 z-20 flex flex-wrap justify-end items-center gap-0.5 bg-black/60 backdrop-blur-md rounded px-1.5 py-0.5 pointer-events-none border border-white/10 max-w-[90%]";
             rateEl.innerHTML = iconsHtml;
+            // 只有这里变了，才调用耗时的 lucide
             lucide.createIcons({ root: rateEl });
         } else {
             rateEl.className = "hidden";
             rateEl.innerHTML = "";
         }
+        // 更新缓存
+        rateEl.setAttribute('data-last-html', iconsHtml);
     }
 }
 
