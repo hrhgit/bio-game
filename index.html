@@ -296,7 +296,7 @@
                 </div>
                 <div>
                     <h2 class="text-2xl text-white tracking-wide font-bold">深海演化数据手册</h2>
-                    <p class="text-xs text-gray-400 font-mono">Ver 2.1 // 绝密档案</p>
+                    <p class="text-xs text-gray-400 font-mono">Ver 3.0 // 核心参数公示</p>
                 </div>
             </div>
             <button onclick="toggleGuide()" class="p-2 hover:bg-white/10 rounded-full transition group">
@@ -309,7 +309,7 @@
 
                 <section class="space-y-4">
                     <h3 class="text-lg text-accent-life flex items-center gap-2 font-bold border-l-4 border-accent-life pl-3">
-                        1. 生存与代谢机制
+                        1. 生存法则 (Survival)
                     </h3>
                     <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-4 text-sm text-gray-300 space-y-3">
                         <div class="grid grid-cols-2 gap-4">
@@ -327,7 +327,7 @@
                                     <i data-lucide="trending-up" class="w-3 h-3 inline mr-1"></i>
                                     供应 > 需求
                                 </div>
-                                <p class="text-[10px] text-gray-500 mt-1">转化率: <span class="font-mono text-white">30%</span> (多余份数 × 0.3)</p>
+                                <p class="text-[10px] text-gray-500 mt-1">转化率: <span class="font-mono text-white">30%</span> (盈余份数 × 0.3)</p>
                             </div>
                         </div>
                         <div class="p-3 bg-blue-900/10 border border-blue-500/20 rounded text-xs text-blue-200">
@@ -344,15 +344,15 @@
                     <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-4 space-y-4">
                         <div class="flex items-center justify-between text-xs font-mono bg-black/40 p-2 rounded text-gray-400">
                             <span>目标公式:</span>
-                            <span class="text-accent-energy">y = 20 + 12 · (x-1)^1.5</span>
+                            <span class="text-accent-energy">y = 20 + 12 · (x-1)^1.8</span>
                         </div>
                         
                         <div class="relative h-32 w-full border-l border-b border-gray-600">
-                            <div class="absolute bottom-0 left-0 w-[8%] h-[4%] bg-accent-energy/50" title="第1关: 20"></div>
-                            <div class="absolute bottom-0 left-[25%] w-[8%] h-[25%] bg-accent-energy/50" title="第4关: 116"></div>
-                            <div class="absolute bottom-0 left-[50%] w-[8%] h-[55%] bg-accent-energy/50" title="第7关: 300+"></div>
-                            <div class="absolute bottom-0 left-[75%] w-[8%] h-[75%] bg-accent-energy/50" title="第10关"></div>
-                            <div class="absolute bottom-0 left-[92%] w-[8%] h-[95%] bg-accent-energy/50" title="第12关"></div>
+                            <div class="absolute bottom-0 left-0 w-[8%] h-[2%] bg-accent-energy/50" title="L1: 20"></div>
+                            <div class="absolute bottom-0 left-[25%] w-[8%] h-[15%] bg-accent-energy/50" title="L4: 106"></div>
+                            <div class="absolute bottom-0 left-[50%] w-[8%] h-[40%] bg-accent-energy/50" title="L7: 320"></div>
+                            <div class="absolute bottom-0 left-[75%] w-[8%] h-[65%] bg-accent-energy/50" title="L10: 600+"></div>
+                            <div class="absolute bottom-0 left-[92%] w-[8%] h-[95%] bg-accent-energy/50" title="L12: 900+"></div>
                             
                             <div class="absolute inset-0 flex items-end justify-between px-2 text-[9px] text-gray-500 pb-1">
                                 <span>L1</span><span>L4</span><span>L7</span><span>L10</span><span>L12</span>
@@ -361,16 +361,16 @@
                         
                         <div class="grid grid-cols-2 gap-2 text-xs">
                             <div class="flex justify-between border-b border-gray-700 py-1"><span>第 1 关目标</span> <span class="font-mono text-white">20 /s</span></div>
-                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 4 关目标</span> <span class="font-mono text-white">82 /s</span></div>
-                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 8 关目标</span> <span class="font-mono text-white">242 /s</span></div>
-                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 12 关目标</span> <span class="font-mono text-accent-gold">458 /s</span></div>
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 4 关目标</span> <span class="font-mono text-white">106 /s</span></div>
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 8 关目标</span> <span class="font-mono text-white">420 /s</span></div>
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 12 关目标</span> <span class="font-mono text-accent-gold">910 /s</span></div>
                         </div>
                     </div>
                 </section>
 
                 <section class="space-y-4 lg:col-span-2">
                     <h3 class="text-lg text-purple-400 flex items-center gap-2 font-bold border-l-4 border-purple-400 pl-3">
-                        3. 虚空观测概率 (Drop Rate Interpolation)
+                        3. 虚空观测概率 (Drop Rate)
                     </h3>
                     <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-5">
                         <div class="flex justify-between items-start mb-4">
@@ -404,25 +404,25 @@
                                     <span>Weight: <span class="font-mono text-gray-500">15</span> vs <span class="font-mono text-amber-400">100</span></span>
                                 </div>
                                 <div class="h-5 w-full rounded flex overflow-hidden text-[9px] text-black font-bold leading-5 text-center shadow-inner relative">
-                                    <div style="width: 20%" class="bg-gray-400/80 border-r border-black/10 group cursor-help relative">
-                                        20%
-                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-gray-500 text-white transition">W:15</div>
+                                    <div style="width: 7%" class="bg-gray-400/80 border-r border-black/10 group cursor-help relative">
+                                        <span class="hidden sm:inline">7%</span>
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10">W:15</div>
                                     </div>
-                                    <div style="width: 20%" class="bg-green-400/80 border-r border-black/10 group cursor-help relative">
-                                        20%
-                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-green-500 text-white transition">W:20</div>
+                                    <div style="width: 9%" class="bg-green-400/80 border-r border-black/10 group cursor-help relative">
+                                        <span class="hidden sm:inline">9%</span>
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10">W:20</div>
                                     </div>
-                                    <div style="width: 20%" class="bg-sky-400/80 border-r border-black/10 group cursor-help relative">
-                                        20%
-                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-sky-500 text-white transition">W:30</div>
+                                    <div style="width: 13%" class="bg-sky-400/80 border-r border-black/10 group cursor-help relative">
+                                        13%
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10">W:30</div>
                                     </div>
-                                    <div style="width: 20%" class="bg-purple-400/80 border-r border-black/10 group cursor-help relative">
-                                        20%
-                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-purple-500 text-white transition">W:60</div>
+                                    <div style="width: 27%" class="bg-purple-400/80 border-r border-black/10 group cursor-help relative">
+                                        27%
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10">W:60</div>
                                     </div>
-                                    <div style="width: 20%" class="bg-amber-400 border-r border-black/10 group cursor-help relative">
-                                        20%
-                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-amber-500 text-white transition">W:100</div>
+                                    <div style="width: 44%" class="bg-amber-400 border-r border-black/10 group cursor-help relative">
+                                        44%
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10">W:100</div>
                                     </div>
                                 </div>
                                 <div class="text-[9px] text-gray-500 text-center mt-1">* 悬停查看底层权重 (Weight Value)</div>
@@ -453,12 +453,37 @@
                                 <p class="text-xs text-gray-500 mb-3">针对同一生物的“适应性强化”道具，价格会随持有量指数增长。</p>
                                 <div class="bg-black/30 p-3 rounded font-mono text-xs space-y-1">
                                     <div class="flex justify-between"><span>Stack 1:</span> <span class="text-gray-300">100%</span></div>
-                                    <div class="flex justify-between"><span>Stack 2:</span> <span class="text-amber-300">150%</span></div>
-                                    <div class="flex justify-between"><span>Stack 3:</span> <span class="text-amber-400">225%</span></div>
-                                    <div class="flex justify-between"><span>Stack 4:</span> <span class="text-red-400">337%</span></div>
-                                    <div class="mt-2 text-[10px] text-gray-500 pt-2 border-t border-gray-700">Formula: Price × (1.5 ^ N)</div>
+                                    <div class="flex justify-between"><span>Stack 2:</span> <span class="text-amber-300">120%</span></div>
+                                    <div class="flex justify-between"><span>Stack 3:</span> <span class="text-amber-400">144%</span></div>
+                                    <div class="flex justify-between"><span>Stack 4:</span> <span class="text-red-400">173%</span></div>
+                                    <div class="mt-2 text-[10px] text-gray-500 pt-2 border-t border-gray-700">Formula: Price × (1.2 ^ N)</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-4 lg:col-span-2">
+                    <h3 class="text-lg text-white flex items-center gap-2 font-bold border-l-4 border-gray-500 pl-3">
+                        5. 道具效应概览
+                    </h3>
+                    <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-5">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+                            <div class="p-2 border border-gray-700 rounded bg-gray-800/30 text-gray-400">深海高压 (+20%)</div>
+                            <div class="p-2 border border-gray-700 rounded bg-gray-800/30 text-gray-400">表层光合 (+30%)</div>
+                            <div class="p-2 border border-gray-700 rounded bg-gray-800/30 text-gray-400">叶绿爆发 (+20%)</div>
+                            <div class="p-2 border border-gray-700 rounded bg-gray-800/30 text-gray-400">交错生态 (+20%)</div>
+                            <div class="p-2 border border-green-800 rounded bg-green-900/20 text-green-400">四角基石 (+40%)</div>
+                            <div class="p-2 border border-green-800 rounded bg-green-900/20 text-green-400">掠食本能 (+20%)</div>
+                            <div class="p-2 border border-green-800 rounded bg-green-900/20 text-green-400">潮汐共振 (-15% Time)</div>
+                            <div class="p-2 border border-sky-800 rounded bg-sky-900/20 text-sky-400">生态马赛克 (+25%)</div>
+                            <div class="p-2 border border-sky-800 rounded bg-sky-900/20 text-sky-400">甲壳风暴 (+5%)</div>
+                            <div class="p-2 border border-sky-800 rounded bg-sky-900/20 text-sky-400">三相共振 (+30%)</div>
+                            <div class="p-2 border border-purple-800 rounded bg-purple-900/20 text-purple-400">暴食胃袋 (双倍盈余)</div>
+                            <div class="p-2 border border-purple-800 rounded bg-purple-900/20 text-purple-400">四核矩阵 (+40%)</div>
+                            <div class="p-2 border border-amber-800 rounded bg-amber-900/20 text-amber-400">进化阶梯 (10% × N)</div>
+                            <div class="p-2 border border-amber-800 rounded bg-amber-900/20 text-amber-400">顶级威压 (+50%)</div>
+                            <div class="p-2 border border-amber-800 rounded bg-amber-900/20 text-amber-400">中央意识核 (+100%)</div>
                         </div>
                     </div>
                 </section>
