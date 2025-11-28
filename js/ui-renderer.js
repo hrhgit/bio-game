@@ -448,7 +448,9 @@ function renderRogueItems() {
             ? `p-2 rounded-lg border-2 border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95`
             : `p-2 rounded-lg border-2 ${theme.border} ${theme.bg} transition-all hover:shadow-lg`;
 
-        let btnClass = "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 transition-all flex items-center justify-center gap-1 shadow-sm ";
+        // ✅ 新的按钮基础样式：右侧竖着的矩形按钮，和过关按钮风格接近
+        let btnClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 " +
+                       "rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
 
         if (item.bought) {
             btnClass += "border-gray-800 text-gray-600 bg-transparent cursor-default";
@@ -458,36 +460,98 @@ function renderRogueItems() {
             btnClass += "border-gray-800 text-gray-600 cursor-not-allowed";
         }
 
-
         html += ` 
             <div class="${wrapperClass}"> 
-                <div class="flex justify-between items-start mb-0.5"> 
-                    <div class="flex items-center gap-2 overflow-hidden"> 
-                        <div class="w-7 h-7 rounded-full ${item.bgColor || 'bg-gray-500'} flex items-center justify-center shrink-0">
-                            <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 text-white"></i>
-                        </div>
-                        <div class="min-w-0"> 
-                            <div class="text-xs font-bold ${theme.title} leading-none truncate">${item.name}</div> 
+                <div class="flex items-stretch gap-2">
+                    <!-- 左侧：图标 + 名称 + 品质 + 简短描述 -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5 overflow-hidden"> 
+                            <div class="w-7 h-7 rounded-full ${item.bgColor || 'bg-gray-500'} flex items-center justify-center shrink-0">
+                                <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 text-white"></i>
+                            </div>
+                            <div class="min-w-0 flex items-center gap-1.5"> 
+                                <div class="text-xs font-bold ${theme.title} leading-none truncate">${item.name}</div> 
+                                <div class="text-[9px] font-bold opacity-70 ${theme.badge} shrink-0">${item.rarity || '普通'}</div> 
+                            </div> 
                         </div> 
-                    </div> 
-                    <div class="text-[9px] font-bold opacity-70 ${theme.badge} shrink-0">${item.rarity || '普通'}</div> 
-                </div> 
-                
-                <p class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-6 opacity-90">${item.desc}</p> 
-                
-                <button 
-                    id="rogue-item-btn-${item.id}"
-                    class="${btnClass}" 
-                    onclick="purchaseRogueItem('${item.id}')" 
-                    ${item.bought || !canAfford ? 'disabled' : ''}> 
-                    ${item.bought 
-                        ? '<span>已激活</span>' 
-                        : `<span>购买</span> <span class="font-mono opacity-90 ml-1 flex items-center"><i data-lucide="zap" class="w-2.5 h-2.5 fill-current mr-0.5"></i>${cost}</span>` 
-                    } 
-                </button> 
+                        
+                        <p class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-6 opacity-90">${item.desc}</p> 
+                    </div>
+
+                    <!-- 右侧：竖着的购买按钮 -->
+                    <button 
+                        id="rogue-item-btn-${item.id}"
+                        class="${btnClass}" 
+                        onclick="purchaseRogueItem('${item.id}')" 
+                        ${item.bought || !canAfford ? 'disabled' : ''}> 
+                        ${
+                            item.bought 
+                                ? '<span>已激活</span>' 
+                                : `
+                                    <span>购买</span>
+                                    <span class="font-mono opacity-90 flex items-center gap-0.5 mt-0.5">
+                                        <i data-lucide="zap" class="w-3 h-3 fill-current"></i>${cost}
+                                    </span>
+                                  `
+                        } 
+                    </button> 
+                </div>
             </div> 
         `; 
     }); 
+
+    // 🔽 在道具列表下面加一块「物种特殊倍率」总览
+    // 从 CREATURES 里遍历所有生物，计算当前 buff 后的倍率
+    const boostBadges = [];
+    CREATURES.forEach(cre => {
+        // 只显示已解锁的物种（如果你想全显示，可以删掉这个判断）
+        if (!gameState.unlockedCreatureIds || !gameState.unlockedCreatureIds.has(cre.id)) return;
+        if (!cre.baseOutput || cre.baseOutput <= 0) return;
+
+        const buffValue = (gameState.activeBuffs && gameState.activeBuffs[cre.id]) || 0;
+        const multiplier = (cre.baseOutput + buffValue) / cre.baseOutput;
+
+        // 如果你只想显示"真的有加成"的，可以加个过滤：倍率≈1 就跳过
+        // if (Math.abs(multiplier - 1) < 0.001) return;
+
+        const stacks = gameState.creatureBoostStacks
+            ? (gameState.creatureBoostStacks[cre.id] || 0)
+            : 0;
+
+        boostBadges.push({
+            name: cre.name,
+            multiplier,
+            stacks
+        });
+    });
+
+    if (boostBadges.length) {
+        html += `
+            <div class="mt-3 pt-2 border-t border-ui-border/60">
+                <div class="text-[11px] text-gray-400 mb-1 flex items-center gap-1">
+                    <i data-lucide="activity" class="w-3 h-3"></i>
+                    <span>物种特殊倍率</span>
+                </div>
+                <div class="flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-gray-300">
+                    ${
+                        boostBadges.map(b => `
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/30">
+                                <span class="text-gray-400">${b.name}</span>
+                                <span class="font-mono text-emerald-300">
+                                    ${b.multiplier.toFixed(2)}×
+                                </span>
+                                ${
+                                    b.stacks && b.stacks > 0
+                                        ? `<span class="text-amber-300 text-[10px]">(${b.stacks}层)</span>`
+                                        : ''
+                                }
+                            </span>
+                        `).join('')
+                    }
+                </div>
+            </div>
+        `;
+    }
 
     cont.innerHTML = html; 
     lucide.createIcons({ root: cont }); 
@@ -681,17 +745,17 @@ function setupRogueItemWatchers() {
                 if (item.bought) {
                     btn.disabled = true;
                     btn.className =
-                        "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
-                        "transition-all flex items-center justify-center gap-1 shadow-sm " +
+                        "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 " +
+                        "rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 " +
                         "border-gray-800 text-gray-600 bg-transparent cursor-default";
                     btn.innerHTML = `<span>已激活</span>`;
                     return;
                 }
 
-                // 公共基础样式（你原来 btnClass 的前半段）
+                // 公共基础样式（和 renderRogueItems 保持一致）
                 const baseBtnClass =
-                    "mt-1.5 px-2 py-1 w-full text-[10px] font-bold rounded border-2 " +
-                    "transition-all flex items-center justify-center gap-1 shadow-sm ";
+                    "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 " +
+                    "rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
                 // 各品质对应的可购买样式（和你 renderRogueItems 里的 theme.btnDef 保持一致）
                 const theme = RARITY_THEME[item.rarity || '普通'] || RARITY_THEME['普通'];
                 const enabledClass = theme.btnEnabled;
@@ -730,6 +794,7 @@ function setupBuildButtonWatchers() {
                     const outTextDiv = document.getElementById(`btn-out-text-${c.id}`);
 
                 // 当前没有打开建造面板时，这些元素都不存在，直接跳过
+
                 if (!wrapper || !card || !btn) return;
 
                 if (canAfford) {

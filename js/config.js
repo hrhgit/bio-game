@@ -89,7 +89,7 @@ const CREATURES = [
     },
     { 
         category: 'apex', id: 'leviathan', name: '深渊巨兽', tier: 5, maxLevel: 10, 
-        cost: 3000, baseOutput: 600, interval: 8000,
+        cost: 4000, baseOutput: 650, interval: 8000,
         foodConfig: { mode: 'AND', targets: ['hunter', 'eel'] }, 
         consumptionImpact: 0.3, starvationRate: -30, 
         color: 'text-red-500', baseColor: 'bg-red-950', fillColor: 'bg-red-700', borderColor: 'border-red-800', icon: 'skull', desc: '深海的霸主，吞噬高阶猎手。',
@@ -112,9 +112,10 @@ function getCreatureDef(id) {
 
 // 关卡配置
 const STAGE_CONFIG = {
-    baseRate: 20,      // 第 1 关目标产出 /s
-    rateStep: 20,      // 每关增加多少目标产出（已提高以拉大关卡差距）
-    payMultiplier: 30  // 跳关需要的能量倍数
+    baseRate: 20,       // 第 1 关目标产出 /s
+    rateStep: 12,       // "弯曲程度"的系数
+    ratePower: 1.5,     // >1 就是越往后涨得越快；1.5~2 比较好调
+    payMultiplier: 30   // 跳关需要的能量倍数
 };
 
 // 肉鸽道具稀有度主题
@@ -161,6 +162,15 @@ const RARITY_THEME = {
     }
 };
 
+// 肉鸽道具稀有度权重（权重越大，被刷出的概率越高）
+const ROGUE_RARITY_WEIGHTS = {
+    '普通': 60,
+    '稀有': 25,
+    '罕见': 10,
+    '史诗': 4,
+    '传说': 1
+};
+
 // 肉鸽道具池
 const ROGUE_ITEMS_POOL = [
     { id:'chloroplast_outburst', name:'叶绿爆发', desc:'所有 T1 生产者 +30% 速度', mutationId:'chloroplast_outburst', rarity: '普通', icon: 'sprout', color: 'text-green-400', bgColor: 'bg-gray-500' },
@@ -179,6 +189,33 @@ const ROGUE_ITEMS_POOL = [
     { id:'central_dogma', name:'中央意识核', desc:'中心 3x3 区域 +100% 速度', mutationId:'central_dogma', rarity: '传说', icon: 'cpu', color: 'text-amber-400', bgColor: 'bg-amber-600' },
     { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '传说', icon: 'shield', color: 'text-cyan-400', bgColor: 'bg-amber-600' }
 ];
+
+// tier → 稀有度
+const RARITY_BY_TIER = {
+    1: '普通',
+    2: '稀有',
+    3: '罕见',
+    4: '史诗',
+    5: '传说'
+};
+
+// 为每个生物生成一个对应的「产出 +10%」可叠加道具
+const PER_CREATURE_BOOST_ITEMS = CREATURES.map(cre => ({
+    id: `boost_${cre.id}`,
+    name: `${cre.name} 适应性强化`,
+    desc: `为【${cre.name}】额外增加 10% 基础产出，可在不同刷新中多次购买并叠加。`,
+    rarity: RARITY_BY_TIER[cre.tier] || '普通',
+
+    icon: cre.icon || 'zap',
+    color: cre.color || 'text-amber-300',
+    bgColor: cre.fillColor || cre.baseColor || 'bg-slate-800',
+
+    kind: 'creature_boost',
+    stackable: true,
+    targetCreatureId: cre.id
+}));
+
+ROGUE_ITEMS_POOL.push(...PER_CREATURE_BOOST_ITEMS);
 
 // 游戏基础配置
 const CONFIG = { 

@@ -12,8 +12,8 @@ let gameState = {
     currentStage: 1,
     lastRatePerSec: 0,
     rogueShopItems: [],
-    // 新增：已经装备在道具栏里的肉鸽道具（用 id 存）
-    rogueItemBar: [],
+    rogueItemBar: [],          // 道具栏里的道具 id
+    creatureBoostStacks: {},    // { [creatureId]: number } 记录各生物被强化了几次
     // ✅ 已解锁的生物 id：基础生产者默认解锁
     unlockedCreatureIds: new Set(['algae', 'kelp'])
 };
@@ -240,10 +240,13 @@ function getDiagonalNeighbors(index) {
 
 // 关卡相关函数
 function getStageConfig(stage) {
-    const base = STAGE_CONFIG.baseRate + (stage - 1) * STAGE_CONFIG.rateStep;
+    const p = STAGE_CONFIG.ratePower || 1.8;
+    const base = STAGE_CONFIG.baseRate +
+        STAGE_CONFIG.rateStep * Math.pow(Math.max(0, stage - 1), p);
+
     return {
         stage,
-        reqRate: base,
+        reqRate: Math.round(base),
         payCost: Math.round(base * STAGE_CONFIG.payMultiplier)
     };
 }
@@ -277,50 +280,129 @@ function enterStage(stage) {
     updateStagePanelDynamic();
 }
 
+// 按稀有度权重，从"未在道具栏内的道具"里抽取本轮商店道具
 function rollRogueShop() {
-    const pool = [...ROGUE_ITEMS_POOL];
+    const ownedIds = new Set(gameState.rogueItemBar || []);
+    const unlocked = gameState.unlockedCreatureIds || new Set();
+
+    // 1）筛选可用道具
+    const available = ROGUE_ITEMS_POOL.filter(item => {
+        // (A) 已在道具栏里的普通道具不再出现
+        if (ownedIds.has(item.id)) return false;
+
+        // (B) 生物增幅道具：如果该生物未解锁 → 不出现
+        if (item.kind === 'creature_boost') {
+            if (!unlocked.has(item.targetCreatureId)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    if (!available.length) {
+        gameState.rogueShopItems = [];
+        return;
+    }
+
+    const maxCount = 3;
+    const pool = [...available];
     const picked = [];
 
-    while (picked.length < 3 && pool.length) {
-        const idx = Math.floor(Math.random() * pool.length);
-        picked.push(pool.splice(idx, 1)[0]);
+    while (picked.length < maxCount && pool.length) {
+        let totalWeight = 0;
+        const weights = pool.map(item => {
+            const rarity = item.rarity || '普通';
+            const w = ROGUE_RARITY_WEIGHTS[rarity] || 1;
+            totalWeight += w;
+            return w;
+        });
+
+        let r = Math.random() * totalWeight;
+        let chosenIndex = 0;
+        for (let i = 0; i < pool.length; i++) {
+            if (r < weights[i]) {
+                chosenIndex = i;
+                break;
+            }
+            r -= weights[i];
+        }
+
+        const chosen = pool.splice(chosenIndex, 1)[0];
+        picked.push(chosen);
     }
 
-    gameState.rogueShopItems = picked.map(item => ({ ...item, bought: false }));
-    // ❌ 不再这里调用 renderRogueItems()
+    gameState.rogueShopItems = picked.map(item => ({
+        ...item,
+        bought: false
+    }));
 }
 
-// 购买肉鸽道具
+
 function purchaseRogueItem(itemId) {
-    const stageConf = getStageConfig(gameState.currentStage);
-    const baseCost = Math.round(stageConf.reqRate * 6);
+    const conf = getStageConfig(gameState.currentStage);
+    const baseCost = Math.round(conf.reqRate * 6);
 
-    // 道具栏已满：点击无反应
-    if (gameState.rogueItemBar.length >= MAX_ROGUE_ITEM_BAR) {
-        return;
-    }
+    const item = gameState.rogueShopItems.find(it => it.id === itemId);
+    if (!item || item.bought) return;
 
-    const shopItem = gameState.rogueShopItems.find(it => it.id === itemId);
-    if (!shopItem) return;
-    if (shopItem.bought) return;
+    const isCreatureBoost = item.kind === 'creature_boost' && item.stackable;
 
+    // 能量不足
     if (gameState.energy < baseCost) {
-        // 能量不够也直接 return，不动 UI（按钮样式由 watcher 控制）
+        SoundSystem.playError && SoundSystem.playError();
         return;
     }
 
-    // ✅ 真正购买
+    // 扣费
     updateEnergy(-baseCost);
-    shopItem.bought = true;
 
-    // 放进道具栏（避免重复）
-    if (!gameState.rogueItemBar.includes(itemId)) {
-        gameState.rogueItemBar.push(itemId);
-    }
+    // 标记本轮"已购买"，按钮要灰掉 —— 两种道具都一样
+    item.bought = true;
 
-    // 应用效果
-    if (shopItem.mutationId) {
-        gameState.activeMutations.add(shopItem.mutationId);
+    if (isCreatureBoost) {
+        // ✅【新类型】针对某个生物叠加 +10% 产出
+        const creatureId = item.targetCreatureId;
+        const def = getCreatureDef(creatureId);
+
+        if (def) {
+            const inc = def.baseOutput * 0.10;
+
+            // 实际数值叠加：叠在 activeBuffs 上，handleProduction 已经用这个算
+            gameState.activeBuffs[creatureId] =
+                (gameState.activeBuffs[creatureId] || 0) + inc;
+
+            // 层数记录（仅用于 UI 展示）
+            if (!gameState.creatureBoostStacks) {
+                gameState.creatureBoostStacks = {};
+            }
+            gameState.creatureBoostStacks[creatureId] =
+                (gameState.creatureBoostStacks[creatureId] || 0) + 1;
+        }
+
+        SoundSystem.playUpgrade && SoundSystem.playUpgrade();
+
+        // 不进道具栏，其它逻辑不变
+    } else {
+        // ✅【原来的普通道具逻辑】—— 不变
+        // 道具栏上限判断
+        if (!gameState.rogueItemBar) {
+            gameState.rogueItemBar = [];
+        }
+        if (!gameState.rogueItemBar.includes(itemId)) {
+            // 如果你有上限判断（比如 >=5 就 return）可以保留
+            if (gameState.rogueItemBar.length >= MAX_ROGUE_ITEM_BAR) {
+                // 按你之前的设定：栏位满了就不响应
+                return;
+            }
+            gameState.rogueItemBar.push(itemId);
+        }
+
+        if (item.mutationId && gameState.activeMutations) {
+            gameState.activeMutations.add(item.mutationId);
+        }
+
+        SoundSystem.playUpgrade && SoundSystem.playUpgrade();
     }
 
     // ✅ 立即刷新商店列表（按钮变“已激活”）
@@ -330,6 +412,35 @@ function purchaseRogueItem(itemId) {
 }
 
 
+
+// 主动丢弃一个已购买的肉鸽道具（释放栏位，效果失效，但未来仍可被刷新到）
+function removeRogueItem(itemId) {
+    if (!Array.isArray(gameState.rogueItemBar)) return;
+
+    const idx = gameState.rogueItemBar.indexOf(itemId);
+    if (idx === -1) {
+        SoundSystem && SoundSystem.playError && SoundSystem.playError();
+        return;
+    }
+
+    // 1. 从道具栏移除
+    gameState.rogueItemBar.splice(idx, 1);
+
+    // 2. 取消这个道具带来的效果（mutation 之类）
+    const def = getRogueItemDef(itemId);
+    if (def && def.mutationId && gameState.activeMutations) {
+        gameState.activeMutations.delete(def.mutationId);
+    }
+
+    // 3. 音效
+    SoundSystem && SoundSystem.playRemove && SoundSystem.playRemove();
+
+    // 4. 刷新 UI
+    renderRogueItemBar && renderRogueItemBar();
+    renderRogueItems && renderRogueItems();
+
+    // ✔ 不用管池子：道具栏移除后，下一次 rollRogueShop 时它自然回到可抽集合
+}
 
 function tryCompleteStage(payInstead) {
     const conf = getStageConfig(gameState.currentStage);
