@@ -286,14 +286,37 @@ function enterStage(stage) {
 }
 
 // 按稀有度权重，从"未在道具栏内的道具"里抽取本轮商店道具
+
+
+// 辅助函数：计算动态权重
+function getDynamicRarityWeight(rarity, currentStage) {
+    const startWeight = ROGUE_RARITY_WEIGHTS[rarity] || 0;
+    // 如果没定义后期配置，默认就用初始配置 (防崩)
+    const endWeight = (window.ROGUE_RARITY_WEIGHTS_LATE && ROGUE_RARITY_WEIGHTS_LATE[rarity]) !== undefined 
+        ? ROGUE_RARITY_WEIGHTS_LATE[rarity] 
+        : startWeight;
+    
+    const targetStage = window.RARITY_EQUILIBRIUM_STAGE || 20;
+
+    // 计算进度 (0.0 ~ 1.0)
+    // 第1关时 progress = 0
+    // 第20关时 progress = 1
+    const progress = Math.min(1.0, Math.max(0.0, (currentStage - 1) / (targetStage - 1)));
+
+    // 线性插值公式: Start + (End - Start) * Progress
+    return startWeight + (endWeight - startWeight) * progress;
+}
+
+// 刷新商店逻辑
 function rollRogueShop() {
     const ownedIds = new Set(gameState.rogueItemBar || []);
     const unlocked = gameState.unlockedCreatureIds || new Set();
 
-    // 1）筛选可用道具
+    // 1. 筛选可用道具
     const available = ROGUE_ITEMS_POOL.filter(item => {
-        // (A) 已在道具栏里的普通道具不再出现
-        if (ownedIds.has(item.id)) return false;
+        // (A) 已在道具栏里的道具不再出现 (防止重复购买占栏位)
+        // 注意：如果是可叠加的生物强化(creature_boost)，允许重复出现
+        if (item.kind !== 'creature_boost' && ownedIds.has(item.id)) return false;
 
         // (B) 生物增幅道具：如果该生物未解锁 → 不出现
         if (item.kind === 'creature_boost') {
@@ -301,7 +324,6 @@ function rollRogueShop() {
                 return false;
             }
         }
-
         return true;
     });
 
@@ -314,27 +336,35 @@ function rollRogueShop() {
     const pool = [...available];
     const picked = [];
 
-    while (picked.length < maxCount && pool.length) {
-        let totalWeight = 0;
-        const weights = pool.map(item => {
-            const rarity = item.rarity || '普通';
-            const w = ROGUE_RARITY_WEIGHTS[rarity] || 1;
-            totalWeight += w;
-            return w;
-        });
+    // ✅ 核心修改：计算每个道具在当前关卡的实时权重
+    // 我们先把 pool 里的每个道具对应的“当前权重”算好，避免在循环里重复算
+    const poolWithWeights = pool.map(item => {
+        const rarity = item.rarity || '普通';
+        // 调用动态权重计算函数
+        const weight = getDynamicRarityWeight(rarity, gameState.currentStage);
+        return { item, weight };
+    });
 
+    while (picked.length < maxCount && poolWithWeights.length) {
+        // 2. 计算总权重
+        let totalWeight = 0;
+        poolWithWeights.forEach(pw => { totalWeight += pw.weight; });
+
+        // 3. 随机抽取
         let r = Math.random() * totalWeight;
         let chosenIndex = 0;
-        for (let i = 0; i < pool.length; i++) {
-            if (r < weights[i]) {
+        
+        for (let i = 0; i < poolWithWeights.length; i++) {
+            if (r < poolWithWeights[i].weight) {
                 chosenIndex = i;
                 break;
             }
-            r -= weights[i];
+            r -= poolWithWeights[i].weight;
         }
 
-        const chosen = pool.splice(chosenIndex, 1)[0];
-        picked.push(chosen);
+        // 4. 选中并移除
+        const chosen = poolWithWeights.splice(chosenIndex, 1)[0];
+        picked.push(chosen.item);
     }
 
     gameState.rogueShopItems = picked.map(item => ({
@@ -456,38 +486,37 @@ function updateEnergy(delta) {
 }
 
 // 布局加成检查
+
 function checkLayoutBuffs(idx, creatureId, size, cells) {
     let patternBuff = 0;
     const { x, y } = getXY(idx, size);
     
-    // 1. 深海高压 (Abyssal Pressure)
+    // 1. 深海高压 (普通): +20%
     if (hasMutation('abyssal_pressure') && y === size - 1) patternBuff += 0.2;
 
-    // 2. 表层光合 (Surface Bloom)
+    // 2. 表层光合 (普通): +30%
     if (hasMutation('surface_bloom') && y === 0) {
         if (getCreatureDef(creatureId).category === 'plant') patternBuff += 0.3;
     }
 
-    // 3. 四角基石 (Cornerstones)
+    // 3. 四角基石 (稀有): +40%
     if (hasMutation('cornerstones')) {
         const isCorner = (x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1);
         if (isCorner) patternBuff += 0.4;
     }
     
-    // 4. 先锋群落 (Pioneer Swarm)
+    // 4. 先锋群落 (普通): +20%
     if (hasMutation('pioneer_swarm')) {
         if (x===0 || x===size-1 || y===0 || y===size-1) patternBuff += 0.2;
     }
 
-    // 5. 中央意识核 (Central Dogma) - 判定正中心
+    // 5. 中央意识核 (传说): +100% (原 200%)
     if (hasMutation('central_dogma')) {
         const center = (size - 1) / 2;
-        // 如果 size 是奇数，正中心就是一个点；偶数没有正中心，这里取最接近中心的点
-        if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) patternBuff += 2.0;
+        if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) patternBuff += 1.0;
     }
 
-    // 6. 急速代谢 (Hyper Metabolism) - 复杂的排序检测
-    // 逻辑：检测当前生物所在的【行】和【列】是否构成"低级到高级"的序列
+    // 6. 进化阶梯 (传说): 10% * 长度 (原 20%)
     if (hasMutation('hyper_metabolism')) {
         const checkLine = (isRow) => {
             let sequence = [];
@@ -496,34 +525,31 @@ function checkLayoutBuffs(idx, creatureId, size, cells) {
                 const c = cells[cIdx];
                 if (c) sequence.push(getCreatureDef(c.creatureId).tier);
             }
-            // 只有当序列长度 >= 2 且严格单调递增时触发
             if (sequence.length < 2) return false;
             for (let i = 0; i < sequence.length - 1; i++) {
                 if (sequence[i] >= sequence[i+1]) return false;
             }
-            return sequence.length; // 返回序列长度作为倍率因子
+            return sequence.length;
         };
 
-        const rowLen = checkLine(true); // 检查行
-        const colLen = checkLine(false); // 检查列
+        const rowLen = checkLine(true);
+        const colLen = checkLine(false);
         
-        // 如果行符合，加成 = 20% * 数量
-        if (rowLen) patternBuff += 0.2 * rowLen;
-        // 如果列符合，叠加加成
-        if (colLen) patternBuff += 0.2 * colLen;
+        if (rowLen) patternBuff += 0.1 * rowLen; // 改为 0.1
+        if (colLen) patternBuff += 0.1 * colLen; // 改为 0.1
     }
 
-    // 7. 三相共振 (Triplet Resonance)
+    // 7. 三相共振 (罕见): +30% (原 60%)
     if (hasMutation('triplet_resonance')) {
         const checkTriple = (dx, dy) => {
             const n1 = getIndex(x-dx, y-dy, size);
             const n2 = getIndex(x+dx, y+dy, size);
             return n1!==-1 && n2!==-1 && cells[n1]?.creatureId===creatureId && cells[n2]?.creatureId===creatureId;
         };
-        if (checkTriple(1,0) || checkTriple(0,1)) patternBuff += 0.6; // 左右 或 上下
+        if (checkTriple(1,0) || checkTriple(0,1)) patternBuff += 0.3;
     }
 
-    // 8. 四核矩阵 (Quad Core)
+    // 8. 四核矩阵 (史诗): +40% (原 80%)
     if (hasMutation('quad_core')) {
         const checkSquare = (dx, dy) => { 
             const n1 = getIndex(x+dx, y, size); 
@@ -531,27 +557,24 @@ function checkLayoutBuffs(idx, creatureId, size, cells) {
             const n3 = getIndex(x+dx, y+dy, size); 
             return n1!==-1 && n2!==-1 && n3!==-1 && cells[n1]?.creatureId === creatureId && cells[n2]?.creatureId === creatureId && cells[n3]?.creatureId === creatureId; 
         }; 
-        if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) patternBuff += 0.8;
+        if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) patternBuff += 0.4;
     }
     
-    // 9. 交错生态 (Interlaced Complement)
+    // 9. 交错生态 (普通): +20%
     if (hasMutation('interlaced_complement')) {
         const neighbors = getNeighbors(idx);
-        // 四周只要有一个同类，就不触发
         const hasSame = neighbors.some(n => cells[n]?.creatureId === creatureId);
         if (!hasSame) patternBuff += 0.2;
     }
     
-    // 10. 生态马赛克 (Ecological Mosaic)
+    // 10. 生态马赛克 (罕见): +25% (原 60%)
     if (hasMutation('ecological_mosaic')) {
         const neighbors = getNeighbors(idx);
-        const validNeighbors = neighbors.filter(n => cells[n]); // 只看有生物的格子
+        const validNeighbors = neighbors.filter(n => cells[n]);
         if (validNeighbors.length > 0) {
-            // 收集邻居种类集合
             const neighborTypes = new Set(validNeighbors.map(n => cells[n].creatureId));
-            // 如果种类数量 == 邻居数量，且都不等于自己 (全不同)
             if (neighborTypes.size === validNeighbors.length && !neighborTypes.has(creatureId)) {
-                patternBuff += 0.6;
+                patternBuff += 0.25;
             }
         }
     }
@@ -560,6 +583,7 @@ function checkLayoutBuffs(idx, creatureId, size, cells) {
 }
 
 // 生态影响计算
+
 function calculateEcologicalImpacts() {
     // 1. 预计算全局数据
     const allCreatureIds = new Set();
@@ -575,38 +599,30 @@ function calculateEcologicalImpacts() {
         }
     });
     
-    // 捕食循环加成 (全局)
+    // 捕食循环 (稀有): 每单位 +5%，上限 50% (原 100%)
     let deathSpeedBonus = 0;
     if (hasMutation('predation_cycle')) {
-        deathSpeedBonus = Math.min(1.0, (gameState.deathCounter || 0) * 0.05);
+        deathSpeedBonus = Math.min(0.5, (gameState.deathCounter || 0) * 0.05);
     }
     
-    // 潮汐共振 (全局)
+    // 潮汐共振 (稀有): 周期 -15% (即效率 x 1.18)
     let tidalBonus = hasMutation('tidal_resonance') ? 0.18 : 0;
 
     // 2. 遍历计算
     const impacts = gameState.cells.map(() => ({ speedMultiplier: 1.0 + deathSpeedBonus + tidalBonus, buffs: 0, debuffs: 0, symbiosis: 0, competition: 0, mutationBuffs: 0, isStarving: false }));
     const predatorCountsOnFood = new Array(gameState.cells.length).fill(0);
 
-    // ... (保留原有的捕食压力计算，注意如果 fractal_grid 开启，这里 getNeighbors 要改) ...
-    // 这里简单处理：如果 fractal_grid 开启，修改 getNeighbors 的逻辑比较危险，不如在这里局部判断
-    
+    // 计算被捕食压力
     gameState.cells.forEach((cell, idx) => {
         if (!cell) return;
         const def = getCreatureDef(cell.creatureId);
-        
-        // 确定搜索范围：普通邻居 or 分形网格(含对角)
         let searchIndices = getNeighbors(idx);
         if (hasMutation('fractal_grid')) {
             searchIndices = [...searchIndices, ...getDiagonalNeighbors(idx)];
         }
-        
-        // 计算被捕食次数 (修正原逻辑以支持分形网格)
         if (def.foodConfig) {
             searchIndices.forEach(nIdx => {
                 const nCell = gameState.cells[nIdx];
-                // 如果邻居是我的猎物，那我对邻居造成压力 (predatorCountsOnFood 记录的是邻居被多少生物吃)
-                // 这里原逻辑反了？原逻辑：def.foodConfig.targets.includes(nCell) -> 意味着 nCell 是食物
                 if (nCell && def.foodConfig.targets.includes(nCell.creatureId)) {
                     predatorCountsOnFood[nIdx]++;
                 }
@@ -618,13 +634,12 @@ function calculateEcologicalImpacts() {
         if (!cell) return;
         const def = getCreatureDef(cell.creatureId);
         
-        // 搜索范围
         let searchIndices = getNeighbors(idx);
         if (hasMutation('fractal_grid')) {
             searchIndices = [...searchIndices, ...getDiagonalNeighbors(idx)];
         }
 
-        // --- 关系计算 (共生/竞争) ---
+        // --- 关系计算 ---
         if (def.relations) {
             def.relations.forEach(rel => {
                 const targetIndices = searchIndices.filter(nIdx => {
@@ -632,11 +647,9 @@ function calculateEcologicalImpacts() {
                     return nCell && nCell.creatureId === rel.target;
                 });
                 if (targetIndices.length > 0) {
-                    if (rel.val < 0 && hasMutation('peace_treaty')) return; // 宁静条约
+                    if (rel.val < 0 && hasMutation('peace_treaty')) return; 
                     
                     let finalVal = rel.val;
-                    
-                    // 互利契约 (Mutualism Contract) & 超共生 (Hyper Symbiosis)
                     if (rel.val > 0) {
                         if (hasMutation('hyper_symbiosis')) finalVal *= 2;
                         if (hasMutation('mutualism_contract')) finalVal *= 2;
@@ -647,7 +660,6 @@ function calculateEcologicalImpacts() {
                     const effect = targetIndices.length * finalVal;
                     if (finalVal > 0) impacts[idx].symbiosis += effect;
                     else impacts[idx].competition += effect;
-                    
                     impacts[idx].speedMultiplier += effect;
                 }
             });
@@ -658,33 +670,33 @@ function calculateEcologicalImpacts() {
         impacts[idx].mutationBuffs += layoutBuff;
         impacts[idx].speedMultiplier += layoutBuff;
         
-        // 甲壳风暴
+        // 甲壳风暴 (罕见): 每只 +5% (原 10%)
         if (hasMutation('schooling_storm') && def.category === 'arthropod') {
-            const bonus = arthropodCount * 0.1;
+            const bonus = arthropodCount * 0.05;
             impacts[idx].mutationBuffs += bonus;
             impacts[idx].speedMultiplier += bonus;
         }
 
-        // 繁荣多样性
+        // 繁荣多样性 (罕见): 每种 +3% (原 5%)
         if (hasMutation('thriving_diversity')) {
-            const bonus = allCreatureIds.size * 0.05;
+            const bonus = allCreatureIds.size * 0.03;
             impacts[idx].mutationBuffs += bonus;
             impacts[idx].speedMultiplier += bonus;
         }
 
-        // 顶级威压
+        // 顶级威压 (传说): T4/T5 -> T1/T2 +50% (原 100%)
         if (hasMutation('apex_presence') && highTierCount > 0 && def.tier <= 2) {
-            const bonus = highTierCount * 1.0;
+            const bonus = highTierCount * 0.5;
             impacts[idx].mutationBuffs += bonus;
             impacts[idx].speedMultiplier += bonus;
         }
 
-        // 掠食本能
+        // 掠食本能 (稀有): +20% (原 40%)
         if (hasMutation('predator_instinct') && def.tier >= 4 && def.foodConfig) {
-             impacts[idx].speedMultiplier += 0.4;
+             impacts[idx].speedMultiplier += 0.2;
         }
         
-        // 叶绿爆发
+        // 叶绿爆发 (普通): +20%
         if (hasMutation('chloroplast_outburst') && def.tier === 1 && def.category === 'plant') {
              impacts[idx].speedMultiplier += 0.2;
         }
@@ -696,7 +708,6 @@ function calculateEcologicalImpacts() {
                 return nCell && def.foodConfig.targets.includes(nCell.creatureId); 
             });
 
-            // 饥饿判定
             let isStarving = false;
             if (def.foodConfig.mode === 'AND') {
                 const eatenTypes = new Set(validFoodIndices.map(i => gameState.cells[i].creatureId));
@@ -717,7 +728,7 @@ function calculateEcologicalImpacts() {
                 
                 if (myFoodShare > 1.0) {
                     const surplus = myFoodShare - 1.0;
-                    // 暴食胃袋逻辑
+                    // 暴食胃袋: 效果翻倍
                     const rate = hasMutation('gluttony') ? 0.6 : 0.3; 
                     const extra = surplus * rate;
                     impacts[idx].buffs += extra;
@@ -725,7 +736,6 @@ function calculateEcologicalImpacts() {
                 }
             }
             
-            // 施加捕食 Debuff
             if (validFoodIndices.length > 0) {
                 const pressure = def.consumptionImpact / validFoodIndices.length;
                 validFoodIndices.forEach(fIdx => { 
@@ -815,15 +825,30 @@ function gameLoop() {
 }
 
 // 生产处理
+
+
 function handleProduction(idx, cell, def) {
     const buffValue = gameState.activeBuffs[cell.creatureId] || 0;
     const baseWithBuff = def.baseOutput + buffValue;
     const output = Math.floor(baseWithBuff * (1 + (cell.level - 1) * 0.2));
+    
+    // 1. 产生能量飘字
     produceEnergy(idx, output);
     
+    // 2. 触发呼吸光 (0.7s)
+    if (typeof triggerProductionGlow === 'function') {
+        triggerProductionGlow(idx, def);
+    }
+
+    // 3. ✅ 播放生产音效 (原来的三连音)
+    // 每次生产都会响！
+    
+    
+    // 4. 升级逻辑 (移除这里的音效调用)
     if (cell.level < def.maxLevel) {
         cell.level++;
-        SoundSystem.playLevelUp();
+        SoundSystem.playLevelUp(); // ❌ 删掉这一行，防止声音重叠
+        
         const visualEl = document.getElementById(`cell-visual-${idx}`);
         if (cell.level >= def.maxLevel && visualEl) {
             visualEl.classList.remove(def.borderColor);
@@ -833,6 +858,8 @@ function handleProduction(idx, cell, def) {
 }
 
 // 能量生产
+// game-core.js -> produceEnergy
+
 function produceEnergy(idx, amount) {
     updateEnergy(amount);
 
@@ -840,20 +867,27 @@ function produceEnergy(idx, amount) {
     if (cellContainer) {
         const rect = cellContainer.getBoundingClientRect();
 
+        // 1. ✅ 获取动态字号 (如果函数不可用则兜底 text-xl)
+        let textSize = 'text-xl';
+        if (typeof getGridScaleStyles === 'function') {
+            textSize = getGridScaleStyles().floatText;
+        }
+
         // 外层：负责定位 & 水平居中
         const wrapper = document.createElement('div');
         wrapper.className = 'fixed pointer-events-none z-20';
         
         const centerX = rect.left + rect.width / 2;
-        const offsetY = -4; // 贴着上边缘稍微往上点
+        const offsetY = -4; 
         wrapper.style.left = `${centerX}px`;
         wrapper.style.top = `${rect.top + offsetY}px`;
         wrapper.style.transform = 'translateX(-50%)';
 
         // 内层：负责内容 + 动画
         const float = document.createElement('div');
-        float.className = 'flex items-center justify-center gap-1 text-xl font-black animate-float-up';
-        float.innerHTML = `<i data-lucide="zap" class="w-4 h-4 fill-current"></i> ${Math.floor(amount)}`;
+        // 2. ✅ 应用动态类名 ${textSize}
+        float.className = `flex items-center justify-center gap-1 ${textSize} font-black animate-float-up`;
+        float.innerHTML = `<i data-lucide="zap" class="w-3 h-3 fill-current"></i> ${Math.floor(amount)}`;
         float.style.color = '#fff';
 
         wrapper.appendChild(float);
@@ -862,7 +896,6 @@ function produceEnergy(idx, amount) {
 
         setTimeout(() => wrapper.remove(), 1500);
     }
-
 }
 
 
@@ -989,19 +1022,33 @@ window.debugAddMutation = (id) => {
 // game-core.js
 
 // 统一的价格计算函数
+// game-core.js -> calculateRogueItemCost
+
+// 统一的价格计算函数
 function calculateRogueItemCost(item) {
     // 1. 基础价格
     const conf = getStageConfig(gameState.currentStage);
+    // 注意：保持你文件里的 *5 设置
     const baseCost = Math.round(conf.reqRate * 5);
 
-    // 2. 只有“生物强化道具”才应用特殊的增长倍率
+    // 2. ✅✅✅ 修复：获取稀有度倍率
+    // 普通:1, 稀有:2, 罕见:3, 史诗:4, 传说:5
+    const rarity = item.rarity || '普通';
+    const rarityMult = (typeof ROGUE_RARITY_COST_MULT !== 'undefined' && ROGUE_RARITY_COST_MULT[rarity]) 
+        ? ROGUE_RARITY_COST_MULT[rarity] 
+        : 1;
+
+    // 3. 计算【含稀有度】的初始价格
+    let finalCost = baseCost * rarityMult;
+
+    // 4. 仅针对“生物强化道具”：叠乘增长系数 (1.5^n)
     if (item.kind === 'creature_boost' && item.stackable && item.targetCreatureId) {
         const stacks = (gameState.creatureBoostStacks && gameState.creatureBoostStacks[item.targetCreatureId]) || 0;
         const growthRate = window.BOOST_ITEM_COST_GROWTH || 1.5;
-        // 基础价 * (1.5 ^ 层数)
-        return Math.round(baseCost * Math.pow(growthRate, stacks));
+        
+        // 最终价格 = (基础价 * 稀有度) * (1.5 ^ 层数)
+        finalCost = finalCost * Math.pow(growthRate, stacks);
     }
 
-    // 普通道具：直接返回基础价格 (不乘稀有度，符合你的要求)
-    return baseCost;
+    return Math.round(finalCost);
 }

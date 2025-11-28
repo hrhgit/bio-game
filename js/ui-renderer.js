@@ -2,6 +2,55 @@
 let lastRenderedIndex = -2;
 let lastPanelMode = 'empty';
 
+// 根据网格大小获取动态样式配置
+// ui-renderer.js -> getGridScaleStyles
+
+// ui-renderer.js -> getGridScaleStyles
+
+function getGridScaleStyles() {
+    const size = gameState.gridSize;
+    
+    // 3x3 (默认大尺寸)
+    if (size <= 3) {
+        return {
+            levelText: 'text-[11px]',
+            iconSize: 'w-3.5 h-3.5',
+            arrowText: 'text-xs',
+            gap: 'gap-0.5',
+            floatText: 'text-xl'
+        };
+    } 
+    // 4x4 (中等)
+    else if (size === 4) {
+        return {
+            levelText: 'text-[10px]',
+            iconSize: 'w-3 h-3',
+            arrowText: 'text-[10px]',
+            gap: 'gap-0.5',
+            floatText: 'text-sm'
+        };
+    } 
+    // ✅ 5x5 (紧凑 - 稍微比 4x4 小一点点，但比 6x6 大)
+    else if (size === 5) {
+        return {
+            levelText: 'text-[9px]',     // 9px 字体，比 4x4 的 10px 小
+            iconSize: 'w-2.5 h-2.5',     // 2.5 (10px) 图标
+            arrowText: 'text-[9px]',
+            gap: 'gap-px',
+            floatText: 'text-[11px]'     // 飘字 11px
+        };
+    }
+    // ✅ 6x6 (极小 - 只有到 6x6 时才缩到最小)
+    else {
+        return {
+            levelText: 'text-[8px]',     // 8px 极限小字体
+            iconSize: 'w-2 h-2',         // 2 (8px) 极小图标，防止拥挤
+            arrowText: 'text-[8px]',
+            gap: 'gap-px',
+            floatText: 'text-[9px]'      // 飘字 9px，防止遮挡
+        };
+    }
+}
 // 判断某个生物是否已经解锁（按 id）
 function isCreatureUnlocked(creatureDef) {
     return gameState.unlockedCreatureIds.has(creatureDef.id);
@@ -13,7 +62,12 @@ function getRogueItemDef(id) {
 }
 
 // 渲染单个格子的 HTML 结构
+
+
 function buildCellInnerHTML(i, cellData) {
+    // ✅ 获取动态样式
+    const styles = getGridScaleStyles();
+
     if (cellData) {
         const c = getCreatureDef(cellData.creatureId);
         const isMax = cellData.level >= c.maxLevel;
@@ -27,7 +81,7 @@ function buildCellInnerHTML(i, cellData) {
                     <i data-lucide="${c.icon}" class="w-8 h-8 ${c.color}"></i>
                 </div>
                 <div class="absolute bottom-1.5 left-0 w-full text-center z-10">
-                    <span id="cell-level-${i}" class="text-[10px] ${isMax ? 'text-accent-gold font-black' : 'text-white/70'} drop-shadow-md">
+                    <span id="cell-level-${i}" class="${styles.levelText} ${isMax ? 'text-accent-gold font-black' : 'text-white/70'} drop-shadow-md">
                         LV.${cellData.level}${isMax ? ' MAX' : ''}
                     </span>
                 </div>
@@ -89,7 +143,10 @@ function renderGrid() {
 
 
 
-// 更新单元格视觉效果 (性能优化版)
+
+
+// ui-renderer.js -> updateCellVisuals
+
 function updateCellVisuals(idx, cellData) {
     const visualEl = document.getElementById(`cell-visual-${idx}`);
     const progressEl = document.getElementById(`cell-progress-${idx}`);
@@ -100,20 +157,27 @@ function updateCellVisuals(idx, cellData) {
 
     if (!visualEl || !cellData) return;
 
-    // 1. 更新进度条 (这个必须每帧更新，消耗很小)
+    // ✅ 获取动态样式配置
+    const styles = getGridScaleStyles();
+    // 提取常用的类名，方便下面拼接字符串
+    const sz = styles.iconSize;   // e.g. "w-3 h-3"
+    const txt = styles.arrowText; // e.g. "text-[10px]"
+
+    // 1. 更新进度条
     if (progressEl) {
         progressEl.style.height = `${cellData.progress}%`;
     }
 
-    // 2. 更新等级文本 (纯文本更新，消耗小)
+    // 2. 更新等级文本
     if (levelEl) {
         const def = getCreatureDef(cellData.creatureId);
         const isMax = cellData.level >= def.maxLevel;
-        // 只有文本变了才更新 DOM，防止微小抖动
         const newText = `LV.${cellData.level}${isMax ? ' MAX' : ''}`;
+        
         if (levelEl.innerText !== newText) {
             levelEl.innerText = newText;
-            levelEl.className = `text-[10px] ${isMax ? 'text-accent-gold font-normal' : 'text-white/90 font-normal'}`;
+            // ✅ 使用 styles.levelText 动态控制字体大小
+            levelEl.className = `${styles.levelText} ${isMax ? 'text-accent-gold font-normal' : 'text-white/90 font-normal'}`;
         }
         
         if (isMax) {
@@ -124,7 +188,7 @@ function updateCellVisuals(idx, cellData) {
         }
     }
 
-    // 3. 状态特效 (通过 classList 切换，消耗可控)
+    // 3. 状态特效
     if (cellData.state === 'dying') {
         if (!visualEl.classList.contains('dying-state')) {
             visualEl.classList.add('dying-state');
@@ -139,38 +203,34 @@ function updateCellVisuals(idx, cellData) {
         }
     }
 
-    // 4. ✅ 核心优化：图标生成逻辑
-    // 只有当图标字符串发生变化时，才执行耗时的 innerHTML 和 lucide 操作
-    
+    // 4. 图标生成 (使用动态尺寸 sz 和 txt)
     let iconsHtml = '';
 
-
     if (cellData.state === 'dying') {
-        iconsHtml += `<span class="text-red-500 text-xs font-bold">!</span>`;
+        iconsHtml += `<span class="text-red-500 ${txt} font-bold">!</span>`;
     } else {
-        if (cellData.speedMultiplier > 1.0) iconsHtml += `<span class="text-green-400 text-xs">▲</span>`;
-        else if (cellData.speedMultiplier < 1.0) iconsHtml += `<span class="text-red-400 text-xs">▼</span>`;
+        // 速度箭头
+        if (cellData.speedMultiplier > 1.0) iconsHtml += `<span class="text-green-400 ${txt}">▲</span>`;
+        else if (cellData.speedMultiplier < 1.0) iconsHtml += `<span class="text-red-400 ${txt}">▼</span>`;
 
-        if (cellData.buffs > 0) iconsHtml += `<i data-lucide="utensils" class="w-3 h-3 text-green-400"></i>`;
-        if (cellData.symbiosis > 0) iconsHtml += `<i data-lucide="heart-handshake" class="w-3 h-3 text-cyan-400"></i>`;
+        // 基础 Buff
+        if (cellData.buffs > 0) iconsHtml += `<i data-lucide="utensils" class="${sz} text-green-400"></i>`;
+        if (cellData.symbiosis > 0) iconsHtml += `<i data-lucide="heart-handshake" class="${sz} text-cyan-400"></i>`;
 
-        
-
-        if (cellData.debuffs > 0) iconsHtml += `<i data-lucide="bone" class="w-3 h-3 text-yellow-500"></i>`;
-        if (cellData.competition < 0) iconsHtml += `<i data-lucide="users" class="w-3 h-3 text-purple-400"></i>`;
+        // 肉鸽道具图标
         if (cellData.mutationBuffs > 0) {
             const def = getCreatureDef(cellData.creatureId);
             const { x, y } = getXY(idx, gameState.gridSize);
             const size = gameState.gridSize;
 
-            if (hasMutation('abyssal_pressure') && y === size - 1) iconsHtml += `<i data-lucide="arrow-down-to-line" class="w-3 h-3 text-blue-300"></i>`;
-            if (hasMutation('surface_bloom') && y === 0 && def.category === 'plant') iconsHtml += `<i data-lucide="sun" class="w-3 h-3 text-yellow-300"></i>`;
-            if (hasMutation('cornerstones') && ((x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1))) iconsHtml += `<i data-lucide="move-diagonal" class="w-3 h-3 text-gray-300"></i>`;
-            if (hasMutation('pioneer_swarm') && (x===0 || x===size-1 || y===0 || y===size-1)) iconsHtml += `<i data-lucide="maximize" class="w-3 h-3 text-cyan-300"></i>`;
+            if (hasMutation('abyssal_pressure') && y === size - 1) iconsHtml += `<i data-lucide="arrow-down-to-line" class="${sz} text-blue-300"></i>`;
+            if (hasMutation('surface_bloom') && y === 0 && def.category === 'plant') iconsHtml += `<i data-lucide="sun" class="${sz} text-yellow-300"></i>`;
+            if (hasMutation('cornerstones') && ((x===0&&y===0) || (x===size-1&&y===0) || (x===0&&y===size-1) || (x===size-1&&y===size-1))) iconsHtml += `<i data-lucide="move-diagonal" class="${sz} text-gray-300"></i>`;
+            if (hasMutation('pioneer_swarm') && (x===0 || x===size-1 || y===0 || y===size-1)) iconsHtml += `<i data-lucide="maximize" class="${sz} text-cyan-300"></i>`;
             
             if (hasMutation('central_dogma')) {
                 const center = (size - 1) / 2;
-                if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) iconsHtml += `<i data-lucide="target" class="w-3 h-3 text-fuchsia-400"></i>`;
+                if (Math.abs(x - center) < 0.6 && Math.abs(y - center) < 0.6) iconsHtml += `<i data-lucide="target" class="${sz} text-fuchsia-400"></i>`;
             }
 
             if (hasMutation('hyper_metabolism')) {
@@ -187,7 +247,7 @@ function updateCellVisuals(idx, cellData) {
                     }
                     return true;
                 };
-                if (checkLine(true) || checkLine(false)) iconsHtml += `<i data-lucide="trending-up" class="w-3 h-3 text-amber-400"></i>`;
+                if (checkLine(true) || checkLine(false)) iconsHtml += `<i data-lucide="trending-up" class="${sz} text-amber-400"></i>`;
             }
 
             if (hasMutation('triplet_resonance')) {
@@ -196,7 +256,7 @@ function updateCellVisuals(idx, cellData) {
                     const n2 = getIndex(x+dx, y+dy, size);
                     return n1!==-1 && n2!==-1 && gameState.cells[n1]?.creatureId===cellData.creatureId && gameState.cells[n2]?.creatureId===cellData.creatureId;
                 };
-                if (checkTriple(1,0) || checkTriple(0,1)) iconsHtml += `<i data-lucide="align-justify" class="w-3 h-3 text-sky-300"></i>`;
+                if (checkTriple(1,0) || checkTriple(0,1)) iconsHtml += `<i data-lucide="align-justify" class="${sz} text-sky-300"></i>`;
             }
 
             if (hasMutation('quad_core')) {
@@ -206,13 +266,13 @@ function updateCellVisuals(idx, cellData) {
                     const n3 = getIndex(x+dx, y+dy, size); 
                     return n1!==-1 && n2!==-1 && n3!==-1 && gameState.cells[n1]?.creatureId === cellData.creatureId && gameState.cells[n2]?.creatureId === cellData.creatureId && gameState.cells[n3]?.creatureId === cellData.creatureId; 
                 }; 
-                if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) iconsHtml += `<i data-lucide="box" class="w-3 h-3 text-purple-400"></i>`;
+                if (checkSquare(1,1) || checkSquare(-1,1) || checkSquare(1,-1) || checkSquare(-1,-1)) iconsHtml += `<i data-lucide="box" class="${sz} text-purple-400"></i>`;
             }
             
             if (hasMutation('interlaced_complement')) {
                 const neighbors = getNeighbors(idx);
                 const hasSame = neighbors.some(n => gameState.cells[n]?.creatureId === cellData.creatureId);
-                if (!hasSame) iconsHtml += `<i data-lucide="grid-2x2" class="w-3 h-3 text-emerald-400"></i>`;
+                if (!hasSame) iconsHtml += `<i data-lucide="grid-2x2" class="${sz} text-emerald-400"></i>`;
             }
 
             if (hasMutation('ecological_mosaic')) {
@@ -221,33 +281,33 @@ function updateCellVisuals(idx, cellData) {
                 if (validNeighbors.length > 0) {
                     const neighborTypes = new Set(validNeighbors.map(n => gameState.cells[n].creatureId));
                     if (neighborTypes.size === validNeighbors.length && !neighborTypes.has(cellData.creatureId)) {
-                        iconsHtml += `<i data-lucide="layout-dashboard" class="w-3 h-3 text-teal-300"></i>`;
+                        iconsHtml += `<i data-lucide="layout-dashboard" class="${sz} text-teal-300"></i>`;
                     }
                 }
             }
 
-            if (hasMutation('chloroplast_outburst') && def.tier === 1 && def.category === 'plant') iconsHtml += `<i data-lucide="leaf" class="w-3 h-3 text-green-400"></i>`;
-            if (hasMutation('predator_instinct') && def.tier >= 4 && def.foodConfig) iconsHtml += `<i data-lucide="swords" class="w-3 h-3 text-red-400"></i>`;
-            if (hasMutation('schooling_storm') && def.category === 'arthropod') iconsHtml += `<i data-lucide="shell" class="w-3 h-3 text-orange-300"></i>`;
-            if (hasMutation('apex_presence') && def.tier <= 2) iconsHtml += `<i data-lucide="crown" class="w-3 h-3 text-amber-400"></i>`;
+            if (hasMutation('chloroplast_outburst') && def.tier === 1 && def.category === 'plant') iconsHtml += `<i data-lucide="leaf" class="${sz} text-green-400"></i>`;
+            if (hasMutation('predator_instinct') && def.tier >= 4 && def.foodConfig) iconsHtml += `<i data-lucide="swords" class="${sz} text-red-400"></i>`;
+            if (hasMutation('schooling_storm') && def.category === 'arthropod') iconsHtml += `<i data-lucide="shell" class="${sz} text-orange-300"></i>`;
+            if (hasMutation('apex_presence') && def.tier <= 2) iconsHtml += `<i data-lucide="crown" class="${sz} text-amber-400"></i>`;
         }
+
+        // 基础 Debuff
+        if (cellData.debuffs > 0) iconsHtml += `<i data-lucide="bone" class="${sz} text-yellow-500"></i>`;
+        if (cellData.competition < 0) iconsHtml += `<i data-lucide="users" class="${sz} text-purple-400"></i>`;
     }
 
-    // ✅ 关键优化点：对比缓存字符串
-    // 我们把上一次渲染的 HTML 存在 data-last-html 属性里
     const lastHtml = rateEl.getAttribute('data-last-html');
-
     if (lastHtml !== iconsHtml) {
         if (iconsHtml) {
-            rateEl.className = "absolute top-1 right-1 z-20 flex flex-wrap justify-end items-center gap-0.5 bg-black/60 backdrop-blur-md rounded px-1.5 py-0.5 pointer-events-none border border-white/10 max-w-[90%]";
+            // ✅ 使用 styles.gap 动态调整间距
+            rateEl.className = `absolute top-1 right-1 z-20 flex flex-wrap justify-end items-center ${styles.gap} bg-black/60 backdrop-blur-md rounded px-1.5 py-0.5 pointer-events-none border border-white/10 max-w-[90%]`;
             rateEl.innerHTML = iconsHtml;
-            // 只有这里变了，才调用耗时的 lucide
             lucide.createIcons({ root: rateEl });
         } else {
             rateEl.className = "hidden";
             rateEl.innerHTML = "";
         }
-        // 更新缓存
         rateEl.setAttribute('data-last-html', iconsHtml);
     }
 }
@@ -669,6 +729,9 @@ function updateDetailPanelDynamic(index) {
 
 
 // 渲染肉鸽道具
+
+
+
 function renderRogueItems() { 
     const cont = document.getElementById('rogue-items-container'); 
     if (!cont) return; 
@@ -686,26 +749,42 @@ function renderRogueItems() {
         const cost = calculateRogueItemCost(item);
         const canAfford = gameState.energy >= cost && !item.bought; 
 
-        // ✅ 修复：定义 rarity，防止报错
+        // 2. ✅✅✅ 关键修复：直接访问 RARITY_THEME，不加 window 前缀
+        // 之前因为加了 window. 导致读取失败，变成空对象，所以颜色全没了
         const rarity = item.rarity || '普通'; 
-        const theme = (window.RARITY_THEME && RARITY_THEME[rarity]) ? RARITY_THEME[rarity] : RARITY_THEME['普通'];
+        let theme = {};
+        try {
+            if (typeof RARITY_THEME !== 'undefined' && RARITY_THEME[rarity]) {
+                theme = RARITY_THEME[rarity];
+            } else if (typeof RARITY_THEME !== 'undefined') {
+                theme = RARITY_THEME['普通'];
+            }
+        } catch (e) {
+            console.error("Theme load error:", e);
+        }
 
+        // 3. 卡片边框与背景
+        // 如果 theme 读取成功，这里就会有颜色；否则显示默认边框
         const wrapperClass = item.bought
             ? `p-2 rounded-lg border-2 border-gray-800 bg-gray-900/50 opacity-50 grayscale transition-all scale-95`
-            : `p-2 rounded-lg border-2 ${theme.border} ${theme.bg} transition-all hover:shadow-lg`;
+            : `p-2 rounded-lg border-2 ${theme.border || 'border-gray-600'} ${theme.bg || 'bg-gray-800'} transition-all hover:shadow-lg`;
 
+        // 4. 按钮样式
         let btnClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
 
         if (item.bought) {
             btnClass += "border-gray-800 text-gray-600 bg-transparent cursor-default";
         } else if (canAfford) {
-            btnClass += theme.btnEnabled || "border-green-600 text-green-400"; // 防止样式缺失
+            // 这里之前你看到的是绿色的兜底样式，现在应该能正确读到 theme.btnEnabled 了
+            btnClass += theme.btnEnabled || "border-green-600 text-green-400"; 
         } else {
             btnClass += "border-gray-800 text-gray-600 cursor-not-allowed";
         }
 
-        // 强制白色图标，背景优先用 item.bgColor (生物色)，否则用 theme.iconBg (品质色)
+        // 5. ✅ 图标颜色与底色
+        // 优先用道具自带(生物强化)，其次用品质主题(RARITY_THEME)，最后兜底
         const iconBg = item.bgColor || theme.iconBg || 'bg-gray-700';
+        const iconColor = item.color || theme.icon || 'text-white';
 
         html += ` 
             <div class="${wrapperClass}"> 
@@ -713,11 +792,11 @@ function renderRogueItems() {
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-0.5 overflow-hidden"> 
                             <div class="w-7 h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0">
-                                <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 text-white"></i>
+                                <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 ${iconColor}"></i>
                             </div>
                             <div class="min-w-0 flex items-center gap-1.5"> 
-                                <div class="text-xs font-bold ${theme.title} leading-none truncate">${item.name}</div> 
-                                <div class="text-[9px] font-bold opacity-70 ${theme.badge} shrink-0">${rarity}</div> 
+                                <div class="text-xs font-bold ${theme.title || 'text-gray-300'} leading-none truncate">${item.name}</div> 
+                                <div class="text-[9px] font-bold opacity-70 ${theme.badge || 'text-gray-500'} shrink-0">${rarity}</div> 
                             </div> 
                         </div> 
                         <p class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-6 opacity-90">${item.desc}</p> 
@@ -730,16 +809,14 @@ function renderRogueItems() {
             </div>`; 
     });
 
-    // 物种倍率总览部分...
+    // ... (保留原本的物种倍率 boostBadges 代码) ...
     const boostBadges = [];
     CREATURES.forEach(cre => {
         if (!gameState.unlockedCreatureIds || !gameState.unlockedCreatureIds.has(cre.id)) return;
         if (!cre.baseOutput || cre.baseOutput <= 0) return;
-
         const buffValue = (gameState.activeBuffs && gameState.activeBuffs[cre.id]) || 0;
         const multiplier = (cre.baseOutput + buffValue) / cre.baseOutput;
         const stacks = gameState.creatureBoostStacks ? (gameState.creatureBoostStacks[cre.id] || 0) : 0;
-
         boostBadges.push({ name: cre.name, multiplier, stacks });
     });
 
@@ -768,7 +845,6 @@ function renderRogueItems() {
     cont.innerHTML = html; 
     lucide.createIcons({ root: cont }); 
 }
-
 // 渲染下方道具栏（最多 5 个）
 function renderRogueItemBar() {
     const cont = document.getElementById('item-bar-container');
@@ -990,6 +1066,40 @@ function toggleGuide() {
     }
 }
 
+// 颜色映射表：将 config.js 里的类名映射为实际颜色
+const TAILWIND_COLORS = {
+    'text-green-300': '#86efac',
+    'text-fuchsia-300': '#f0abfc',
+    'text-cyan-300': '#67e8f9',
+    'text-pink-300': '#f9a8d4',
+    'text-yellow-300': '#fde047',
+    'text-indigo-300': '#a5b4fc',
+    'text-emerald-300': '#6ee7b7',
+    'text-violet-300': '#c4b5fd',
+    'text-orange-300': '#fdba74',
+    'text-red-500': '#ef4444',
+    // 兜底颜色
+    'default': '#ffffff'
+};
+
+// 触发格子的生产呼吸光特效
+function triggerProductionGlow(idx, def) {
+    const visualEl = document.getElementById(`cell-visual-${idx}`);
+    if (!visualEl) return;
+
+    // 1. 获取生物对应的 HEX 颜色
+    const colorHex = TAILWIND_COLORS[def.color] || TAILWIND_COLORS['default'];
+
+    // 2. 设置 CSS 变量
+    visualEl.style.setProperty('--glow-color', colorHex);
+
+    // 3. 重置并触发动画
+    // 移除类 -> 强制重绘 (reflow) -> 添加类，确保动画每次都能从头播放
+    visualEl.classList.remove('production-glow-effect');
+    void visualEl.offsetWidth; 
+    visualEl.classList.add('production-glow-effect');
+}
+
 // 给肉鸽按钮挂一个"能量是否足够"的 watcher
 // 给肉鸽按钮挂 watcher：根据“当前能量是否足够且未购买”来控制启用/禁用
 // 肉鸽道具按钮：用监视器统一控制「是否可购买」 → 启用 / 禁用 + 颜色
@@ -999,18 +1109,32 @@ function setupRogueItemWatchers() {
     gameState.rogueShopItems.forEach(item => {
         uiVarMonitor.watchThreshold({
             key: `rogue-item-${item.id}`,
-            // ✅ 这里调用 game-core 的新计价函数
+            // 使用统一计价函数
             getValue: () => (gameState.energy >= calculateRogueItemCost(item) && !item.bought),
             target: true,
             cmp: (val, target) => !!val === target,
             onChange(canBuy) {
                 const btn = document.getElementById(`rogue-item-btn-${item.id}`);
                 if (!btn) return;
-                if (item.bought) return; // 已购买的不处理
+                
+                // 如果已购买，保持已激活状态，不被 watcher 覆盖
+                if (item.bought) {
+                    // 这里通常不需要动，因为 renderRogueItems 已经渲染好了，
+                    // 但为了保险，可以保留之前的 disabled 逻辑，或者直接 return
+                    return; 
+                }
 
-                // 安全获取样式
+                // ✅✅✅ 关键修复：正确获取品质主题（去除 window. 前缀）
                 const rarity = item.rarity || '普通';
-                const theme = (window.RARITY_THEME && RARITY_THEME[rarity]) ? RARITY_THEME[rarity] : {};
+                let theme = {};
+                
+                // 尝试获取主题，如果获取失败则回退到'普通'
+                if (typeof RARITY_THEME !== 'undefined') {
+                    theme = RARITY_THEME[rarity] || RARITY_THEME['普通'] || {};
+                }
+
+                // 获取品质对应的按钮样式
+                // 如果 theme.btnEnabled 存在（例如 sky-600），就用它；否则才兜底用 green
                 const enabledClass = theme.btnEnabled || "border-green-600 text-green-400";
                 const disabledClass = "border-gray-800 text-gray-600 cursor-not-allowed";
 
@@ -1018,6 +1142,7 @@ function setupRogueItemWatchers() {
 
                 if (canBuy) {
                     btn.disabled = false;
+                    // 这里将应用正确的品质色（如蓝色/紫色/金色）
                     btn.className = baseClass + enabledClass;
                 } else {
                     btn.disabled = true;

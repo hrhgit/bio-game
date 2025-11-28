@@ -60,6 +60,13 @@ const SoundSystem = {
         this.playTone(1318, 'sine', 0.5, 0.2); 
     },
     
+    playProduce: function() { 
+        this.init(); 
+        this.playTone(880, 'sine', 0.3, 0); 
+        this.playTone(1108, 'sine', 0.3, 0.1); 
+        this.playTone(1318, 'sine', 0.5, 0.2); 
+    },
+    
     playUpgrade: function() { 
         this.init(); 
         this.playTone(440, 'triangle', 0.2, 0);
@@ -67,9 +74,11 @@ const SoundSystem = {
         this.playTone(659, 'triangle', 0.4, 0.2); 
     },
     
+    
     playError: function() { 
         this.init(); 
         this.playTone(150, 'square', 0.1); 
         this.playTone(100, 'square', 0.1, 0.1); 
     }
+    
 };

@@ -117,7 +117,7 @@ function getCreatureDef(id) {
 const STAGE_CONFIG = {
     baseRate: 20,       // 第 1 关目标产出 /s
     rateStep: 12,       // "弯曲程度"的系数
-    ratePower: 1.5,     // >1 就是越往后涨得越快；1.5~2 比较好调
+    ratePower: 1.8,     // >1 就是越往后涨得越快；1.5~2 比较好调
     payMultiplier: 30   // 跳关需要的能量倍数
 };
 
@@ -179,6 +179,20 @@ const ROGUE_RARITY_WEIGHTS = {
     '传说': 1
 };
 
+// 2. ✅ 新增：终局权重 (你希望在后期达到的概率)
+// 这里我设置成了完全均等 (各20)，你可以根据需要微调
+// 比如不想让传说太泛滥，可以设为: 普通:10, 稀有:15, 罕见:25, 史诗:30, 传说:20
+const ROGUE_RARITY_WEIGHTS_LATE = {
+    '普通': 15,  // 数量多，单体权重低
+    '稀有': 20,
+    '罕见': 30,
+    '史诗': 60,  // 数量少，单体权重高
+    '传说': 100  // 数量极少，单体权重极高
+};
+// 3. ✅ 新增：达到终局权重的关卡数
+// 在第 1 关时使用初始权重，在第 12 关(及以后)使用终局权重，中间平滑过渡
+const RARITY_EQUILIBRIUM_STAGE = 12;
+
 // ✅ 新增：肉鸽道具品质 → 价格倍率
 const ROGUE_RARITY_COST_MULT = {
     '普通': 1,
@@ -199,30 +213,29 @@ const ROGUE_ITEMS_POOL = [
 
     // 稀有 (Rare)
     { id:'cornerstones', name:'四角基石', desc:'地图四个角落的生物 +40% 速度', mutationId:'cornerstones', rarity: '稀有', icon: 'move-diagonal' },
-    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +40% 速度', mutationId:'predator_instinct', rarity: '稀有', icon: 'swords' },
+    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +20% 速度', mutationId:'predator_instinct', rarity: '稀有', icon: 'swords' },
     { id:'tidal_resonance', name:'潮汐共振', desc:'生产周期 -15%', mutationId:'tidal_resonance', rarity: '稀有', icon: 'waves' },
-    { id:'predation_cycle', name:'捕食循环', desc:'每有单位死亡，全局 +5% 速度 (上限 100%)', mutationId:'predation_cycle', rarity: '稀有', icon: 'recycle' },
+    { id:'predation_cycle', name:'捕食循环', desc:'每有单位死亡，全局 +5% 速度 (上限 50%)', mutationId:'predation_cycle', rarity: '稀有', icon: 'recycle' },
 
     // 罕见 (Uncommon)
-    { id:'ecological_mosaic', name:'生态马赛克', desc:'四周邻居种类均不同时，该生物 +60% 速度', mutationId:'ecological_mosaic', rarity: '罕见', icon: 'layout-dashboard' },
-    { id:'schooling_storm', name:'甲壳风暴', desc:'场上每存在一个「甲壳节肢」，所有甲壳类 +10% 速度', mutationId:'schooling_storm', rarity: '罕见', icon: 'shell' },
-    { id:'thriving_diversity', name:'繁荣多样性', desc:'每存在一种不同物种，全局生产效率 +5%', mutationId:'thriving_diversity', rarity: '罕见', icon: 'library' },
-    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +60% 产出', mutationId:'triplet_resonance', rarity: '罕见', icon: 'align-justify' },
+    { id:'ecological_mosaic', name:'生态马赛克', desc:'四周邻居种类均不同时，该生物 +25% 速度', mutationId:'ecological_mosaic', rarity: '罕见', icon: 'layout-dashboard' },
+    { id:'schooling_storm', name:'甲壳风暴', desc:'场上每存在一个「甲壳节肢」，所有甲壳类 +5% 速度', mutationId:'schooling_storm', rarity: '罕见', icon: 'shell' },
+    { id:'thriving_diversity', name:'繁荣多样性', desc:'每存在一种不同物种，全局生产效率 +3%', mutationId:'thriving_diversity', rarity: '罕见', icon: 'library' },
+    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +30% 产出', mutationId:'triplet_resonance', rarity: '罕见', icon: 'align-justify' },
     { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: '罕见', icon: 'heart-handshake' },
     { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '罕见', icon: 'shield-check' },
     { id:'fractal_grid', name:'分形网格', desc:'对角也视为相邻 (捕食/共生/竞争生效)', mutationId:'fractal_grid', rarity: '罕见', icon: 'grid-3x3' },
 
     // 史诗 (Epic)
     { id:'gluttony', name:'暴食胃袋', desc:'食物富余转化的加速 Buff 效果翻倍', mutationId:'gluttony', rarity: '史诗', icon: 'utensils' },
-    { id:'quad_core', name:'四核矩阵', desc:'2x2 方阵同类时 +80% 速度', mutationId:'quad_core', rarity: '史诗', icon: 'box' },
+    { id:'quad_core', name:'四核矩阵', desc:'2x2 方阵同类时 +40% 速度', mutationId:'quad_core', rarity: '史诗', icon: 'box' },
     { id:'mutualism_contract', name:'互利契约', desc:'共生加成翻倍，竞争惩罚也翻倍', mutationId:'mutualism_contract', rarity: '史诗', icon: 'file-signature' },
 
     // 传说 (Legendary)
-    { id:'hyper_metabolism', name:'进化阶梯', desc:'单线生物等级递增时，该线获得 (20% × 序列长度) 的速度加成', mutationId:'hyper_metabolism', rarity: '传说', icon: 'trending-up' },
-    { id:'apex_presence', name:'顶级威压', desc:'每有一只 T4/T5，所有 T1/T2 生物 +100% 产出', mutationId:'apex_presence', rarity: '传说', icon: 'crown' },
-    { id:'central_dogma', name:'中央意识核', desc:'中心 1x1 区域 +200% 速度', mutationId:'central_dogma', rarity: '传说', icon: 'target' }
+    { id:'hyper_metabolism', name:'进化阶梯', desc:'单线生物等级递增时，该线获得 (10% × 序列长度) 的速度加成', mutationId:'hyper_metabolism', rarity: '传说', icon: 'trending-up' },
+    { id:'apex_presence', name:'顶级威压', desc:'每有一只 T4/T5，所有 T1/T2 生物 +50% 产出', mutationId:'apex_presence', rarity: '传说', icon: 'crown' },
+    { id:'central_dogma', name:'中央意识核', desc:'中心 1x1 区域 +100% 速度', mutationId:'central_dogma', rarity: '传说', icon: 'target' }
 ];
-
 // tier → 稀有度
 const RARITY_BY_TIER = {
     1: '普通',

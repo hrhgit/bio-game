@@ -172,7 +172,7 @@
                 <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
                     <span>
                         <i data-lucide="package-open" class="w-3 h-3 inline mr-1"></i>
-                        本关随机增益
+                        深海商店
                     </span>
                 </div>
                 <div id="rogue-items-container" class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3">
@@ -287,15 +287,16 @@
     </div>
 
     <div id="guide-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-    <div class="bg-secondary-dark border-2 border-ui-border rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col relative overflow-hidden transform scale-95 transition-transform duration-300" id="guide-content">
-        <div class="p-6 border-b border-ui-border flex justify-between items-center bg-primary-dark/80 z-20 shadow-md">
+    <div class="bg-secondary-dark border-2 border-ui-border rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col relative overflow-hidden transform scale-95 transition-transform duration-300" id="guide-content">
+        
+        <div class="p-5 border-b border-ui-border flex justify-between items-center bg-primary-dark/95 z-20 shadow-md">
             <div class="flex items-center gap-3">
-                <div class="p-2 bg-accent-gold/10 rounded-lg">
-                    <i data-lucide="graduation-cap" class="w-6 h-6 text-accent-gold"></i>
+                <div class="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <i data-lucide="database" class="w-6 h-6 text-blue-400"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl text-white tracking-wide">深海生存指南</h2>
-                    <p class="text-sm text-gray-400">从入门到精通的演化策略</p>
+                    <h2 class="text-2xl text-white tracking-wide font-bold">深海演化数据手册</h2>
+                    <p class="text-xs text-gray-400 font-mono">Ver 2.1 // 绝密档案</p>
                 </div>
             </div>
             <button onclick="toggleGuide()" class="p-2 hover:bg-white/10 rounded-full transition group">
@@ -303,102 +304,166 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto bg-[#0b1221] p-8 custom-scrollbar space-y-12">
-            
-            <section class="space-y-4">
-                <h3 class="text-xl text-accent-life flex items-center gap-2">
-                    <i data-lucide="target" class="w-5 h-5"></i> 1. 核心目标
-                </h3>
-                <div class="bg-primary-dark/50 border border-ui-border rounded-xl p-5 text-gray-300 leading-relaxed">
-                    <p>你的目标是构建一个<strong class="text-white">自我维持且高效</strong>的生态系统。</p>
-                    <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-gray-400">
-                        <li>通过放置生物产生 <span class="text-accent-energy">能量</span> 和 <span class="text-accent-life">生产效率</span>。</li>
-                        <li>达到关卡要求的<strong>目标效率</strong>即可免费通关。</li>
-                        <li>或者积累足够的能量，支付昂贵的费用强行跳关。</li>
-                    </ul>
-                </div>
-            </section>
+        <div class="flex-1 overflow-y-auto bg-[#0b1221] p-6 custom-scrollbar">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            <section class="space-y-4">
-                <h3 class="text-xl text-red-400 flex items-center gap-2">
-                    <i data-lucide="skull" class="w-5 h-5"></i> 2. 生存法则 (最重要!)
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-primary-dark/50 border border-ui-border rounded-xl p-5">
-                        <h4 class="text-white font-bold mb-2 flex items-center gap-2"><i data-lucide="utensils" class="w-4 h-4 text-orange-400"></i> 进食规则</h4>
-                        <p class="text-sm text-gray-400 mb-3">捕食者必须放在猎物的<strong>上下左右相邻</strong>格子中。</p>
-                        <div class="text-xs space-y-2 bg-black/20 p-3 rounded border border-white/5">
-                            <div class="flex items-center gap-2"><span class="text-green-400">OR 模式:</span> <span>吃到任意一种指定猎物即可存活。</span></div>
-                            <div class="flex items-center gap-2"><span class="text-red-400">AND 模式:</span> <span>必须<strong>同时</strong>吃到所有指定种类的猎物。</span></div>
+                <section class="space-y-4">
+                    <h3 class="text-lg text-accent-life flex items-center gap-2 font-bold border-l-4 border-accent-life pl-3">
+                        1. 生存与代谢机制
+                    </h3>
+                    <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-4 text-sm text-gray-300 space-y-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-black/20 p-3 rounded border border-white/5">
+                                <div class="text-gray-500 text-xs mb-1">饥饿判定</div>
+                                <div class="text-red-400 font-medium">
+                                    <i data-lucide="x-circle" class="w-3 h-3 inline mr-1"></i>
+                                    无相邻猎物 = <span class="font-bold">死亡</span>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-1">捕食者需在猎物(上下左右)相邻格。</p>
+                            </div>
+                            <div class="bg-black/20 p-3 rounded border border-white/5">
+                                <div class="text-gray-500 text-xs mb-1">富余加速 (Surplus)</div>
+                                <div class="text-green-400 font-medium">
+                                    <i data-lucide="trending-up" class="w-3 h-3 inline mr-1"></i>
+                                    供应 > 需求
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-1">转化率: <span class="font-mono text-white">30%</span> (多余份数 × 0.3)</p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-blue-900/10 border border-blue-500/20 rounded text-xs text-blue-200">
+                            <strong>计算示例：</strong> 1只<span class="text-pink-300">晶石蟹</span>(需1份食物) 被 3棵<span class="text-fuchsia-300">海带</span>包围。<br>
+                            盈余 2 份食物 → 获得 <span class="font-mono">2 × 30% = +60%</span> 额外产出效率。
                         </div>
                     </div>
-                    <div class="bg-primary-dark/50 border border-ui-border rounded-xl p-5">
-                        <h4 class="text-white font-bold mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i> 饥饿与死亡</h4>
-                        <p class="text-sm text-gray-400">一旦食物短缺，生物会进入<span class="text-red-500">濒死状态</span>，停止生产并快速掉血，直到死亡消失。</p>
-                        <p class="text-xs text-gray-500 mt-2 italic">提示：在放置高级捕食者前，先确周围有足够的食物来源！</p>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <section class="space-y-4">
-                <h3 class="text-xl text-cyan-400 flex items-center gap-2">
-                    <i data-lucide="sparkles" class="w-5 h-5"></i> 3. 效率加成
-                </h3>
-                <div class="bg-primary-dark/50 border border-ui-border rounded-xl p-5 space-y-4">
-                    <div class="flex gap-4 items-start">
-                        <div class="p-2 bg-green-900/30 rounded text-green-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="text-green-400 font-bold text-sm">富余加速 (Surplus)</h4>
-                            <p class="text-xs text-gray-400 mt-1">当 <span class="text-white">食物数量 > 捕食者数量</span> 时，多余的食物会转化为巨额的速度加成。</p>
-                            <p class="text-[10px] text-gray-500 mt-1">例如：用 4 个海带喂养 1 个晶石蟹，螃蟹的产出会非常惊人。</p>
+                <section class="space-y-4">
+                    <h3 class="text-lg text-accent-energy flex items-center gap-2 font-bold border-l-4 border-accent-energy pl-3">
+                        2. 熵增模型 (Target Rate)
+                    </h3>
+                    <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-4 space-y-4">
+                        <div class="flex items-center justify-between text-xs font-mono bg-black/40 p-2 rounded text-gray-400">
+                            <span>目标公式:</span>
+                            <span class="text-accent-energy">y = 20 + 12 · (x-1)^1.5</span>
+                        </div>
+                        
+                        <div class="relative h-32 w-full border-l border-b border-gray-600">
+                            <div class="absolute bottom-0 left-0 w-[8%] h-[4%] bg-accent-energy/50" title="第1关: 20"></div>
+                            <div class="absolute bottom-0 left-[25%] w-[8%] h-[25%] bg-accent-energy/50" title="第4关: 116"></div>
+                            <div class="absolute bottom-0 left-[50%] w-[8%] h-[55%] bg-accent-energy/50" title="第7关: 300+"></div>
+                            <div class="absolute bottom-0 left-[75%] w-[8%] h-[75%] bg-accent-energy/50" title="第10关"></div>
+                            <div class="absolute bottom-0 left-[92%] w-[8%] h-[95%] bg-accent-energy/50" title="第12关"></div>
+                            
+                            <div class="absolute inset-0 flex items-end justify-between px-2 text-[9px] text-gray-500 pb-1">
+                                <span>L1</span><span>L4</span><span>L7</span><span>L10</span><span>L12</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 1 关目标</span> <span class="font-mono text-white">20 /s</span></div>
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 4 关目标</span> <span class="font-mono text-white">82 /s</span></div>
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 8 关目标</span> <span class="font-mono text-white">242 /s</span></div>
+                            <div class="flex justify-between border-b border-gray-700 py-1"><span>第 12 关目标</span> <span class="font-mono text-accent-gold">458 /s</span></div>
                         </div>
                     </div>
-                    <div class="h-px bg-white/5 w-full"></div>
-                    <div class="flex gap-4 items-start">
-                        <div class="p-2 bg-cyan-900/30 rounded text-cyan-400"><i data-lucide="heart-handshake" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="text-cyan-400 font-bold text-sm">共生效应 (Symbiosis)</h4>
-                            <p class="text-xs text-gray-400 mt-1">特定的生物相邻会产生共鸣。例如 <span class="text-white">虾 + 蟹</span> 互利共生，<span class="text-white">海带 + 蓝藻</span> 形成藻带。</p>
-                        </div>
-                    </div>
-                    <div class="h-px bg-white/5 w-full"></div>
-                    <div class="flex gap-4 items-start">
-                        <div class="p-2 bg-purple-900/30 rounded text-purple-400"><i data-lucide="users" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="text-purple-400 font-bold text-sm">竞争惩罚 (Competition)</h4>
-                            <p class="text-xs text-gray-400 mt-1">同类生物如果过于密集（上下左右都是同类），或者遇到天敌（如水母遇到电鳗），会降低生产效率。</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <section class="space-y-4">
-                <h3 class="text-xl text-accent-gold flex items-center gap-2">
-                    <i data-lucide="package" class="w-5 h-5"></i> 4. 试炼道具 (Roguelike)
-                </h3>
-                <div class="bg-primary-dark/50 border border-ui-border rounded-xl p-5 text-gray-300 leading-relaxed">
-                    <p class="text-sm">每一关都会刷新随机的增益道具，它们能彻底改变游戏规则。</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                        <div class="bg-black/20 p-2 rounded border border-white/5 text-center">
-                            <i data-lucide="arrow-down-to-line" class="w-4 h-4 mx-auto text-blue-400 mb-1"></i>
-                            <div class="text-xs text-gray-400">位置加成</div>
+                <section class="space-y-4 lg:col-span-2">
+                    <h3 class="text-lg text-purple-400 flex items-center gap-2 font-bold border-l-4 border-purple-400 pl-3">
+                        3. 虚空观测概率 (Drop Rate Interpolation)
+                    </h3>
+                    <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-5">
+                        <div class="flex justify-between items-start mb-4">
+                            <p class="text-sm text-gray-400">
+                                道具权重随 <span class="text-white">关卡进度 (1 -> 12)</span> 线性插值。<br>
+                                后期采用<span class="text-purple-400">「倒金字塔权重」</span>以补偿卡池稀释，实现体感均等。
+                            </p>
+                            <div class="text-[10px] font-mono text-gray-500 bg-black/40 px-2 py-1 rounded">Target Stage: 12</div>
                         </div>
-                        <div class="bg-black/20 p-2 rounded border border-white/5 text-center">
-                            <i data-lucide="layout-grid" class="w-4 h-4 mx-auto text-teal-400 mb-1"></i>
-                            <div class="text-xs text-gray-400">布局连携</div>
-                        </div>
-                        <div class="bg-black/20 p-2 rounded border border-white/5 text-center">
-                            <i data-lucide="trending-up" class="w-4 h-4 mx-auto text-amber-400 mb-1"></i>
-                            <div class="text-xs text-gray-400">特定强化</div>
-                        </div>
-                        <div class="bg-black/20 p-2 rounded border border-white/5 text-center">
-                            <i data-lucide="recycle" class="w-4 h-4 mx-auto text-rose-400 mb-1"></i>
-                            <div class="text-xs text-gray-400">全局机制</div>
+
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                    <span>第 1 关 (初始环境)</span>
+                                    <span>Weight: <span class="font-mono text-gray-300">60</span> vs <span class="font-mono text-amber-400">1</span></span>
+                                </div>
+                                <div class="h-5 w-full rounded flex overflow-hidden text-[9px] text-black font-bold leading-5 text-center shadow-inner">
+                                    <div style="width: 60%" class="bg-gray-400 border-r border-black/10">60%</div>
+                                    <div style="width: 25%" class="bg-green-400 border-r border-black/10">25%</div>
+                                    <div style="width: 10%" class="bg-sky-400 border-r border-black/10">10%</div>
+                                    <div style="width: 4%" class="bg-purple-400 border-r border-black/10"></div>
+                                    <div style="width: 1%" class="bg-amber-400">1%</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center -my-2 opacity-30"><i data-lucide="chevrons-down" class="w-5 h-5 text-gray-500"></i></div>
+
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                    <span>第 12+ 关 (高熵均衡)</span>
+                                    <span>Weight: <span class="font-mono text-gray-500">15</span> vs <span class="font-mono text-amber-400">100</span></span>
+                                </div>
+                                <div class="h-5 w-full rounded flex overflow-hidden text-[9px] text-black font-bold leading-5 text-center shadow-inner relative">
+                                    <div style="width: 20%" class="bg-gray-400/80 border-r border-black/10 group cursor-help relative">
+                                        20%
+                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-gray-500 text-white transition">W:15</div>
+                                    </div>
+                                    <div style="width: 20%" class="bg-green-400/80 border-r border-black/10 group cursor-help relative">
+                                        20%
+                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-green-500 text-white transition">W:20</div>
+                                    </div>
+                                    <div style="width: 20%" class="bg-sky-400/80 border-r border-black/10 group cursor-help relative">
+                                        20%
+                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-sky-500 text-white transition">W:30</div>
+                                    </div>
+                                    <div style="width: 20%" class="bg-purple-400/80 border-r border-black/10 group cursor-help relative">
+                                        20%
+                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-purple-500 text-white transition">W:60</div>
+                                    </div>
+                                    <div style="width: 20%" class="bg-amber-400 border-r border-black/10 group cursor-help relative">
+                                        20%
+                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-amber-500 text-white transition">W:100</div>
+                                    </div>
+                                </div>
+                                <div class="text-[9px] text-gray-500 text-center mt-1">* 悬停查看底层权重 (Weight Value)</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
+                <section class="space-y-4 lg:col-span-2">
+                    <h3 class="text-lg text-amber-400 flex items-center gap-2 font-bold border-l-4 border-amber-400 pl-3">
+                        4. 能量经济学 (Inflation)
+                    </h3>
+                    <div class="bg-primary-dark/60 border border-ui-border rounded-xl p-5 text-sm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="text-gray-300 font-bold mb-2">稀有度税 (Rarity Tax)</h4>
+                                <ul class="space-y-2 text-gray-400">
+                                    <li class="flex justify-between"><span>基准 (Base):</span> <span class="font-mono text-accent-energy">Rate × 5</span></li>
+                                    <li class="flex justify-between border-b border-gray-700/50 pb-1"><span>普通 (Common):</span> <span class="text-gray-300">Base × 1.0</span></li>
+                                    <li class="flex justify-between border-b border-gray-700/50 pb-1"><span>稀有 (Rare):</span> <span class="text-green-400">Base × 2.0</span></li>
+                                    <li class="flex justify-between border-b border-gray-700/50 pb-1"><span>罕见 (Uncommon):</span> <span class="text-sky-400">Base × 3.0</span></li>
+                                    <li class="flex justify-between border-b border-gray-700/50 pb-1"><span>史诗 (Epic):</span> <span class="text-purple-400">Base × 4.0</span></li>
+                                    <li class="flex justify-between"><span>传说 (Legendary):</span> <span class="text-amber-400">Base × 5.0</span></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="text-gray-300 font-bold mb-2">适应性强化通胀</h4>
+                                <p class="text-xs text-gray-500 mb-3">针对同一生物的“适应性强化”道具，价格会随持有量指数增长。</p>
+                                <div class="bg-black/30 p-3 rounded font-mono text-xs space-y-1">
+                                    <div class="flex justify-between"><span>Stack 1:</span> <span class="text-gray-300">100%</span></div>
+                                    <div class="flex justify-between"><span>Stack 2:</span> <span class="text-amber-300">150%</span></div>
+                                    <div class="flex justify-between"><span>Stack 3:</span> <span class="text-amber-400">225%</span></div>
+                                    <div class="flex justify-between"><span>Stack 4:</span> <span class="text-red-400">337%</span></div>
+                                    <div class="mt-2 text-[10px] text-gray-500 pt-2 border-t border-gray-700">Formula: Price × (1.5 ^ N)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
         </div>
     </div>
 </div>

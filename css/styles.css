@@ -194,3 +194,27 @@
     animation: unlockBadgeTextPulse 1.1s ease-in-out infinite;
     transform-origin: center center;
 }
+/* styles.css */
+
+/* 生产时的呼吸光特效 */
+@keyframes productionPulse {
+    0% {
+        box-shadow: 0 0 0 0 var(--glow-color);
+        border-color: var(--glow-color); /* 边框也跟着亮一下 */
+        z-index: 50; /* 保证光晕不被遮挡 */
+    }
+    50% {
+        box-shadow: 0 0 40px 5px var(--glow-color); /* 扩散光晕 */
+        border-color: var(--glow-color); /* 高潮时边框发白光 */
+        z-index: 50;
+    }
+    100% {
+        box-shadow: 0 0 5px 0 transparent;
+        z-index: 10;
+    }
+}
+
+.production-glow-effect {
+    animation: productionPulse 1.1s ease-out;
+    /* 这里的颜色会由 JS 动态注入 --glow-color */
+}
