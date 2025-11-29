@@ -207,7 +207,7 @@ function updateCellVisuals(idx, cellData) {
     let iconsHtml = '';
 
     if (cellData.state === 'dying') {
-        iconsHtml += `<span class="text-red-500 ${txt} font-bold">!</span>`;
+        iconsHtml += `<span class="text-red-500 ${txt}">!</span>`;
     } else {
         // 速度箭头
         if (cellData.speedMultiplier > 1.0) iconsHtml += `<span class="text-green-400 ${txt}">▲</span>`;
@@ -557,7 +557,7 @@ function updateDetailPanelDynamic(index) {
             </div>`;
         }
         if (cell.speedMultiplier <= 0) {
-            statusHtml += `<div class="flex items-center gap-1 text-red-500 text-xs mt-1 font-bold">
+            statusHtml += `<div class="flex items-center gap-1 text-red-500 text-xs mt-1">
                 <i data-lucide="skull" class="w-3 h-3"></i> 极度饥饿/被捕食殆尽
             </div>`;
         }
@@ -770,7 +770,7 @@ function renderRogueItems() {
             : `p-2 rounded-lg border-2 ${theme.border || 'border-gray-600'} ${theme.bg || 'bg-gray-800'} transition-all hover:shadow-lg`;
 
         // 4. 按钮样式
-        let btnClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
+        let btnClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] transition-all shadow-sm px-1 py-1 ";
 
         if (item.bought) {
             btnClass += "border-gray-800 text-gray-600 bg-transparent cursor-default";
@@ -795,8 +795,8 @@ function renderRogueItems() {
                                 <i data-lucide="${item.icon || 'sparkles'}" class="w-4 h-4 ${iconColor}"></i>
                             </div>
                             <div class="min-w-0 flex items-center gap-1.5"> 
-                                <div class="text-xs font-bold ${theme.title || 'text-gray-300'} leading-none truncate">${item.name}</div> 
-                                <div class="text-[9px] font-bold opacity-70 ${theme.badge || 'text-gray-500'} shrink-0">${rarity}</div> 
+                                <div class="text-xs ${theme.title || 'text-gray-300'} leading-none truncate">${item.name}</div> 
+                                <div class="text-[9px] opacity-70 ${theme.badge || 'text-gray-500'} shrink-0">${rarity}</div> 
                             </div> 
                         </div> 
                         <p class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-6 opacity-90">${item.desc}</p> 
@@ -1138,7 +1138,7 @@ function setupRogueItemWatchers() {
                 const enabledClass = theme.btnEnabled || "border-green-600 text-green-400";
                 const disabledClass = "border-gray-800 text-gray-600 cursor-not-allowed";
 
-                const baseClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] font-bold transition-all shadow-sm px-1 py-1 ";
+                const baseClass = "shrink-0 w-[4.5rem] h-full flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 text-[10px] transition-all shadow-sm px-1 py-1 ";
 
                 if (canBuy) {
                     btn.disabled = false;
