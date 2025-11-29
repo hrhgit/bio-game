@@ -1,3 +1,4 @@
+
 // 游戏核心逻辑
 let gameState = {
     energy: CONFIG.initialEnergy,
