@@ -29,15 +29,15 @@ const CREATURES = [
         category: 'mollusk', id: 'plankton', name: '荧光浮游虫', tier: 2, maxLevel: 6, 
         cost: 150, baseOutput: 30, interval: 4000,
         foodConfig: { mode: 'OR', targets: ['algae'] }, 
-        consumptionImpact: 0.3, starvationRate: -10, 
+        consumptionImpact: 0.4, starvationRate: -10, 
         color: 'text-cyan-300', baseColor: 'bg-cyan-950', fillColor: 'bg-cyan-600', borderColor: 'border-cyan-800', icon: 'bug', desc: '以蓝藻为食。',
-        relations: [{ target: 'plankton', type: 'competition', val: -0.1, msg: '种群过密' }]
+        relations: [{ target: 'plankton', type: 'symbiosis', val: 0.1, msg: '荧光集聚' }]
     },
     { 
         category: 'arthropod', id: 'crab', name: '晶石蟹', tier: 2, maxLevel: 6, 
         cost: 300, baseOutput: 60, interval: 5000,
         foodConfig: { mode: 'OR', targets: ['kelp'] }, 
-        consumptionImpact: 0.3, starvationRate: -10, 
+        consumptionImpact: 0.4, starvationRate: -10, 
         color: 'text-pink-300', baseColor: 'bg-pink-950', fillColor: 'bg-pink-600', borderColor: 'border-pink-800', icon: 'gem', desc: '坚硬的甲壳，喜爱海带。',
         relations: [{ target: 'shrimp', type: 'symbiosis', val: 0.25, msg: '虾蟹互利' }]
     },
@@ -45,7 +45,7 @@ const CREATURES = [
         category: 'arthropod', id: 'shrimp', name: '电光虾', tier: 2, maxLevel: 4, 
         cost: 200, baseOutput: 30, interval: 3000,
         foodConfig: { mode: 'OR', targets: ['algae', 'kelp'] }, 
-        consumptionImpact: 0.3, starvationRate: -12, 
+        consumptionImpact: 0.4, starvationRate: -12, 
         color: 'text-yellow-300', baseColor: 'bg-yellow-950', fillColor: 'bg-yellow-600', borderColor: 'border-yellow-800', icon: 'zap', desc: '适应力强，可食用多种植物。',
         relations: [{ target: 'crab', type: 'symbiosis', val: 0.25, msg: '虾蟹互利' }]
     },
@@ -53,52 +53,63 @@ const CREATURES = [
         category: 'mollusk', id: 'jellyfish', name: '幽灵水母', tier: 3, maxLevel: 8, 
         cost: 600, baseOutput: 100, interval: 5000,
         foodConfig: { mode: 'OR', targets: ['plankton', 'shrimp'] }, 
-        consumptionImpact: 0.4, starvationRate: -15, 
+        consumptionImpact: 0.8, starvationRate: -15, 
         color: 'text-indigo-300', baseColor: 'bg-indigo-950', fillColor: 'bg-indigo-600', borderColor: 'border-indigo-800', icon: 'ghost', desc: '漂浮的捕食者。',
         relations: [
             { target: 'jellyfish', type: 'symbiosis', val: 0.1, msg: '水母群聚' },
-            { target: 'eel', type: 'competition', val: -0.2, msg: '领地冲突' }
         ]
     },
     { 
         category: 'reptile', id: 'turtle', name: '装甲海龟', tier: 3, maxLevel: 20, 
         cost: 1000, baseOutput: 160, interval: 6000,
         foodConfig: { mode: 'OR', targets: ['crab', 'plankton'] }, 
-        consumptionImpact: 0, starvationRate: -10, 
+        consumptionImpact: 0.8, starvationRate: -10, 
         color: 'text-emerald-300', baseColor: 'bg-emerald-950', fillColor: 'bg-emerald-600', borderColor: 'border-emerald-800', icon: 'shield', desc: '厚重的甲壳，食谱广泛。',
         relations: []
     },
     { 
-        category: 'fish', id: 'eel', name: '雷霆鳗', tier: 3, maxLevel: 8, 
+        category: 'fish', id: 'eel', name: '雷霆鳗', tier: 4, maxLevel: 8, 
         cost: 1400, baseOutput: 160, interval: 4000,
         foodConfig: { mode: 'AND', targets: ['shrimp', 'plankton'] }, 
-        consumptionImpact: 0.4, starvationRate: -18, 
+        consumptionImpact: 1.2, starvationRate: -18, 
         color: 'text-violet-300', baseColor: 'bg-violet-950', fillColor: 'bg-violet-600', borderColor: 'border-violet-800', icon: 'activity', desc: '敏捷的猎手，需多种食物。',
         relations: [
             { target: 'kelp', type: 'symbiosis', val: 0.3, msg: '伏击环境' },
-            { target: 'jellyfish', type: 'competition', val: -0.2, msg: '领地冲突' }
         ]
     },
     { 
         category: 'fish', id: 'hunter', name: '深海猎手', tier: 4, maxLevel: 8, 
         cost: 2000, baseOutput: 300, interval: 6000,
         foodConfig: { mode: 'AND', targets: ['jellyfish', 'turtle'] }, 
-        consumptionImpact: 0.5, starvationRate: -20, 
+        consumptionImpact: 1.2, starvationRate: -20, 
         color: 'text-orange-300', baseColor: 'bg-orange-950', fillColor: 'bg-orange-600', borderColor: 'border-orange-800', icon: 'crosshair', desc: '凶猛的顶级掠食者，成群狩猎。',
         relations: [
             { target: 'algae', type: 'symbiosis', val: 0.3, msg: '富氧水域' },
-            { target: 'hunter', type: 'competition', val: -0.3, msg: '王不见王' }
         ]
     },
     { 
         category: 'apex', id: 'leviathan', name: '深渊巨兽', tier: 5, maxLevel: 10, 
         cost: 4000, baseOutput: 650, interval: 8000,
         foodConfig: { mode: 'AND', targets: ['hunter', 'eel'] }, 
-        consumptionImpact: 0.6, starvationRate: -30, 
+        consumptionImpact: 1.6, starvationRate: -30, 
         color: 'text-red-500', baseColor: 'bg-red-950', fillColor: 'bg-red-700', borderColor: 'border-red-800', icon: 'skull', desc: '深海的霸主，吞噬高阶猎手。',
         relations: [{ target: 'leviathan', type: 'competition', val: -0.5, msg: '王不见王' }]
     }
 ];
+
+// 关卡解锁表：按关卡解锁生物和棋盘大小（使用 id）
+const STAGE_UNLOCKS = {
+    1:  { creatureIds: ['plankton'] },                   // 荧光浮游虫
+    3:  { creatureIds: ['crab', 'shrimp'] },             // 晶石蟹、电光虾
+    5:  { gridSize: 4 },                                 // 解锁 4x4
+    7:  { creatureIds: ['jellyfish','turtle'] },                  // 幽灵水母
+    9:  { creatureIds: [ 'eel'] },              // 装甲海龟、雷霆鳗
+    11: { gridSize: 5 },                                 // 解锁 5x5
+    13: { creatureIds: ['hunter'] },                     // 深海猎手
+    15: { creatureIds: ['leviathan'] },                  // 深渊巨兽
+    17: { gridSize: 6 }                                  // 解锁 6x6
+    // 17 关以后不再解锁新东西，就不用写
+};
 
 // =====================
 // 生物索引表 & 快捷函数
@@ -209,11 +220,11 @@ const ROGUE_ITEMS_POOL = [
     { id:'surface_bloom', name:'表层光合', desc:'位于最顶层一行的海草藻类 +30% 速度', mutationId:'surface_bloom', rarity: '普通', icon: 'sun' },
     { id:'chloroplast_outburst', name:'叶绿爆发', desc:'所有 T1 生产者 +20% 速度', mutationId:'chloroplast_outburst', rarity: '普通', icon: 'leaf' },
     { id:'interlaced_complement', name:'交错生态', desc:'四周没有同类时 +20% 速度', mutationId:'interlaced_complement', rarity: '普通', icon: 'grid-2x2' },
-    { id:'pioneer_swarm', name:'先锋群落', desc:'最外圈一圈格子的产出 +20%', mutationId:'pioneer_swarm', rarity: '普通', icon: 'maximize' },
+    { id:'pioneer_swarm', name:'先锋群落', desc:'最外圈一圈格子的产出 +15%', mutationId:'pioneer_swarm', rarity: '稀有', icon: 'maximize' },
 
     // 稀有 (Rare)
     { id:'cornerstones', name:'四角基石', desc:'地图四个角落的生物 +40% 速度', mutationId:'cornerstones', rarity: '稀有', icon: 'move-diagonal' },
-    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +20% 速度', mutationId:'predator_instinct', rarity: '稀有', icon: 'swords' },
+    { id:'predator_instinct', name:'掠食本能', desc:'T4 及以上掠食者 +20% 速度', mutationId:'predator_instinct', rarity: '罕见', icon: 'swords' },
     { id:'tidal_resonance', name:'潮汐共振', desc:'生产周期 -15%', mutationId:'tidal_resonance', rarity: '稀有', icon: 'waves' },
     { id:'predation_cycle', name:'捕食循环', desc:'每有单位死亡，全局 +5% 速度 (上限 50%)', mutationId:'predation_cycle', rarity: '稀有', icon: 'recycle' },
 
@@ -221,9 +232,9 @@ const ROGUE_ITEMS_POOL = [
     { id:'ecological_mosaic', name:'生态马赛克', desc:'四周邻居种类均不同时，该生物 +25% 速度', mutationId:'ecological_mosaic', rarity: '罕见', icon: 'layout-dashboard' },
     { id:'schooling_storm', name:'甲壳风暴', desc:'场上每存在一个「甲壳节肢」，所有甲壳类 +5% 速度', mutationId:'schooling_storm', rarity: '罕见', icon: 'shell' },
     { id:'thriving_diversity', name:'繁荣多样性', desc:'每存在一种不同物种，全局生产效率 +3%', mutationId:'thriving_diversity', rarity: '罕见', icon: 'library' },
-    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +30% 产出', mutationId:'triplet_resonance', rarity: '罕见', icon: 'align-justify' },
-    { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: '罕见', icon: 'heart-handshake' },
-    { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '罕见', icon: 'shield-check' },
+    { id:'triplet_resonance', name:'三相共振', desc:'同类三连成线时，该类 +30% 产出', mutationId:'triplet_resonance', rarity: '稀有', icon: 'align-justify' },
+    { id:'hyper_symbiosis', name:'超共生', desc:'所有共生加成翻倍', mutationId:'hyper_symbiosis', rarity: '稀有', icon: 'heart-handshake' },
+    { id:'peace_treaty', name:'宁静条约', desc:'忽略所有竞争惩罚', mutationId:'peace_treaty', rarity: '稀有', icon: 'shield-check' },
     { id:'fractal_grid', name:'分形网格', desc:'对角也视为相邻 (捕食/共生/竞争生效)', mutationId:'fractal_grid', rarity: '罕见', icon: 'grid-3x3' },
 
     // 史诗 (Epic)
@@ -233,7 +244,7 @@ const ROGUE_ITEMS_POOL = [
 
     // 传说 (Legendary)
     { id:'hyper_metabolism', name:'进化阶梯', desc:'单线生物等级递增时，该线获得 (10% × 序列长度) 的速度加成', mutationId:'hyper_metabolism', rarity: '传说', icon: 'trending-up' },
-    { id:'apex_presence', name:'顶级威压', desc:'每有一只 T4/T5，所有 T1/T2 生物 +50% 产出', mutationId:'apex_presence', rarity: '传说', icon: 'crown' },
+    { id:'apex_presence', name:'顶级威压', desc:'每有一只 T4/T5，所有 T1/T2 生物 +50% 产出', mutationId:'apex_presence', rarity: '史诗', icon: 'crown' },
     { id:'central_dogma', name:'中央意识核', desc:'中心 1x1 区域 +100% 速度', mutationId:'central_dogma', rarity: '传说', icon: 'target' }
 ];
 // tier → 稀有度

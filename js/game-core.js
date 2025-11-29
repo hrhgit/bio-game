@@ -70,19 +70,6 @@ function buildNeighborCache(size) {
 }
 
 
-// 关卡解锁表：按关卡解锁生物和棋盘大小（使用 id）
-const STAGE_UNLOCKS = {
-    1:  { creatureIds: ['plankton'] },                   // 荧光浮游虫
-    3:  { creatureIds: ['crab', 'shrimp'] },             // 晶石蟹、电光虾
-    5:  { gridSize: 4 },                                 // 解锁 4x4
-    7:  { creatureIds: ['jellyfish'] },                  // 幽灵水母
-    9:  { creatureIds: ['turtle', 'eel'] },              // 装甲海龟、雷霆鳗
-    11: { gridSize: 5 },                                 // 解锁 5x5
-    13: { creatureIds: ['hunter'] },                     // 深海猎手
-    15: { creatureIds: ['leviathan'] },                  // 深渊巨兽
-    17: { gridSize: 6 }                                  // 解锁 6x6
-    // 17 关以后不再解锁新东西，就不用写
-};
 
 // 把当前棋盘从 oldSize 扩展到 newSize，保留原有生物在左上角
 function expandGridPreserveCreatures(newSize) {
@@ -505,9 +492,9 @@ function checkLayoutBuffs(idx, creatureId, size, cells) {
         if (isCorner) patternBuff += 0.4;
     }
     
-    // 4. 先锋群落 (普通): +20%
+    // 4. 先锋群落 (普通): +15%
     if (hasMutation('pioneer_swarm')) {
-        if (x===0 || x===size-1 || y===0 || y===size-1) patternBuff += 0.2;
+        if (x===0 || x===size-1 || y===0 || y===size-1) patternBuff += 0.15;
     }
 
     // 5. 中央意识核 (传说): +100% (原 200%)
